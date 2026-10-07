@@ -2327,7 +2327,7 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
         if triaje.get("requiere_scq", False) and not triaje.get("scq_completado", False):
             alertas.append("SCQ pendiente para completar la informacion clinica.")
         if not n["plan_activo_id"]:
-            alertas.append("Aun no hay un plan terapeutico publicado para la familia.")
+            alertas.append("Aun no hay una recomendacion publicada para la familia.")
         elif progreso["sesiones_completadas"] == 0:
             alertas.append("Plan activo pendiente de registrar sesiones en los ultimos 30 dias.")
         else:

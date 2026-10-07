@@ -1,6 +1,6 @@
-{
-    "name": "rimai_app",
-    "short_name": "rimai_app",
+﻿{
+    "name": "SendaIA",
+    "short_name": "SendaIA",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
