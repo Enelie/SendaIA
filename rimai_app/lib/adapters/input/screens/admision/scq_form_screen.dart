@@ -587,7 +587,7 @@ class _SCQFormScreenState extends ConsumerState<SCQFormScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "Evaluación Preliminar de Indicadores TEA",
+                              "Evaluación Preliminar de Indicadores TDAH",
                               style: GoogleFonts.plusJakartaSans(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,

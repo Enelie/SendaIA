@@ -213,9 +213,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         ),
         iconAlignment: IconAlignment.end,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFB8D6B2),
+          backgroundColor: const Color(0xFFBAB0FF),
           disabledBackgroundColor:
-              const Color(0xFFB8D6B2).withValues(alpha: 0.6),
+              const Color(0xFFBAB0FF).withValues(alpha: 0.6),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(9999),
@@ -226,7 +226,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             return 4;
           }),
           shadowColor: WidgetStateProperty.all(
-              const Color(0xFFB8D6B2).withValues(alpha: 0.3)),
+              const Color(0xFFBAB0FF).withValues(alpha: 0.3)),
         ),
       ),
     );
@@ -248,7 +248,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFFB8D6B2),
+                color: const Color(0xFFBAB0FF),
               ),
             ),
             const TextSpan(text: ' y '),
@@ -257,7 +257,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: const Color(0xFFB8D6B2),
+                color: const Color(0xFFBAB0FF),
               ),
             ),
           ],

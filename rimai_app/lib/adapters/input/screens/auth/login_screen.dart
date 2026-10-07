@@ -163,7 +163,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           style: GoogleFonts.plusJakartaSans(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: const Color(0xFFB8D6B2),
+            color: const Color(0xFFBAB0FF),
           ),
         ),
       ),
@@ -195,9 +195,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         iconAlignment: IconAlignment.end,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFB8D6B2),
+          backgroundColor: const Color(0xFFBAB0FF),
           disabledBackgroundColor:
-              const Color(0xFFB8D6B2).withValues(alpha: 0.6),
+              const Color(0xFFBAB0FF).withValues(alpha: 0.6),
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(9999),
@@ -208,7 +208,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             return 4;
           }),
           shadowColor: WidgetStateProperty.all(
-              const Color(0xFFB8D6B2).withValues(alpha: 0.3)),
+              const Color(0xFFBAB0FF).withValues(alpha: 0.3)),
         ),
       ),
     );
@@ -219,7 +219,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       children: [
         Expanded(
             child: Divider(
-                color: const Color(0xFFEAE4DC).withValues(alpha: 0.5),
+                color: const Color(0xFFD3F0FC).withValues(alpha: 0.5),
                 thickness: 1)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -235,7 +235,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         ),
         Expanded(
             child: Divider(
-                color: const Color(0xFFEAE4DC).withValues(alpha: 0.5),
+                color: const Color(0xFFD3F0FC).withValues(alpha: 0.5),
                 thickness: 1)),
       ],
     );
@@ -278,7 +278,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border:
-              Border.all(color: const Color(0xFFD9C5BF).withValues(alpha: 0.5)),
+              Border.all(color: const Color(0xFFC8E9F7).withValues(alpha: 0.5)),
         ),
         child: Center(
           child: Icon(iconData, size: 28, color: color),
@@ -304,7 +304,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFFB8D6B2),
+                  color: const Color(0xFFBAB0FF),
                 ),
               ),
             ],

@@ -9,10 +9,10 @@ class RimAIFeaturePanel extends StatelessWidget {
     return Container(
       constraints: const BoxConstraints(minHeight: 460),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F3EF),
+        color: const Color(0xFFF6FEFF),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFFD9C5BF).withValues(alpha: 0.5),
+          color: const Color(0xFFC8E9F7).withValues(alpha: 0.5),
           width: 1,
         ),
       ),
@@ -27,7 +27,7 @@ class RimAIFeaturePanel extends StatelessWidget {
               height: 320,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color.fromRGBO(184, 214, 178, 0.2),
+                color: const Color.fromRGBO(186, 176, 255, 0.2),
               ),
             ),
           ),
@@ -40,7 +40,7 @@ class RimAIFeaturePanel extends StatelessWidget {
               height: 128,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFDCEFDD).withValues(alpha: 0.3),
+                color: const Color(0xFFF0F1FF).withValues(alpha: 0.3),
               ),
             ),
           ),
@@ -56,22 +56,22 @@ class RimAIFeaturePanel extends StatelessWidget {
                   style: GoogleFonts.plusJakartaSans(
                     fontSize: 28,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFFB8D6B2),
+                    color: const Color(0xFFBAB0FF),
                     height: 1.2,
                   ),
                 ),
                 const SizedBox(height: 24),
                 _buildFeatureRow(
-                  circleBg: const Color(0xFFDCEFDD),
+                  circleBg: const Color(0xFFF0F1FF),
                   icon: Icons.psychology,
-                  iconColor: const Color(0xFF6B8E6D),
+                  iconColor: const Color(0xFF5A61E6),
                   label: 'IA diseñada para el bienestar',
                 ),
                 const SizedBox(height: 24),
                 _buildFeatureRow(
-                  circleBg: const Color(0xFFEDE4D9),
+                  circleBg: const Color(0xFFD8F3FF),
                   icon: Icons.child_care,
-                  iconColor: const Color(0xFF7A7267),
+                  iconColor: const Color.fromARGB(255, 80, 78, 99),
                   label: 'Entornos sensoriales adaptativos',
                 ),
               ],

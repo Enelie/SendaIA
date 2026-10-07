@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rimai_app/core/providers/dashboard_providers.dart';
@@ -8,13 +7,13 @@ import 'package:rimai_app/core/providers/auth_providers.dart';
 import 'package:rimai_app/adapters/input/widgets/rimai_bottom_nav.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const _kP = Color(0xFFA43714);
-const _kA = Color(0xFFB8D6B2);
-const _kBg = Color(0xFFFAF9F6);
-const _kSurf = Color(0xFFF5F3EC);
+const _kP = Color(0xFF5CBF95);
+const _kA = Color(0xFFBAB0FF);
+const _kBg = Color(0xFFE9F8FF);
+const _kSurf = Color(0xFFF6FEFF);
 const _kText = Color(0xFF2A2825);
 const _kSub = Color(0xFF6B6661);
-const _kBdr = Color(0xFFE2E0D9);
+const _kBdr = Color(0xFFC8E9F7);
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 class FamiliaDashboardScreen extends ConsumerStatefulWidget {
@@ -30,7 +29,6 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
   final _pc = PageController();
   bool _saving = false;
   String? _editingNinoId;
-  bool _antecedentesExpanded = true;
 
   // Step 1
   final _nameCtrl = TextEditingController();
@@ -39,32 +37,28 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
   DateTime? _date;
   String _nivelCognitivo = 'Bajo';
 
-  // Step 2
-  String _com = 'Palabras sueltas';
-  String _cv = 'Intermitente';
-  String _js = 'Paralelo';
-  final Set<String> _mot = {};
+  // Step 2 — Perfil de aprendizaje
+  String _atencion = 'Moderado';
+  final Set<String> _formaAprende = {};
+  final _actDificilesCtrl = TextEditingController();
+  final List<String> _actDificiles = [];
+  String _instrucciones = 'Sigue instrucciones simples';
 
-  // Step 3
-  final Set<String> _hiper = {};
-  final Set<String> _hipo = {};
-  final Set<String> _rep = {};
+  // Step 3 — Entorno y aprendizaje
+  final Set<String> _distractores = {};
+  final Set<String> _factores = {};
+  String _lugarEstudio = 'Escritorio o mesa en casa';
   final _rutinaCtrl = TextEditingController();
   final List<String> _rutinas = [];
+  String _pausas = 'Sí, de forma ocasional';
 
-  // Step 4
-  String? _docDiagnosticoName;
-  String? _docDiagnosticoPath;
-  String? _planTerapeuticoName;
-  String? _planTerapeuticoPath;
-  String? _medicacionFileName;
-  String? _medicacionFilePath;
-  final _medicacionCtrl = TextEditingController();
-  final List<String> _medicaciones = [];
-  bool _acceptedPrivacyConsent = false;
-
-  // Step 5
+  // Step 4 — Intereses y resumen
   final Set<String> _int = {};
+  final _motivanCtrl = TextEditingController();
+  final List<String> _motivan = [];
+  final _estrategiasCtrl = TextEditingController();
+  final List<String> _estrategias = [];
+  bool _acceptedPrivacyConsent = false;
 
   @override
   void dispose() {
@@ -72,8 +66,10 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     _nameCtrl.dispose();
     _dateCtrl.dispose();
     _diagCtrl.dispose();
+    _actDificilesCtrl.dispose();
     _rutinaCtrl.dispose();
-    _medicacionCtrl.dispose();
+    _motivanCtrl.dispose();
+    _estrategiasCtrl.dispose();
     super.dispose();
   }
 
@@ -183,28 +179,20 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       if (_diagCtrl.text.trim().isNotEmpty)
         'diagnostico': _diagCtrl.text.trim(),
       'hitos': {
-        'comunicacion': _com,
-        'contacto_visual': _cv,
-        'juego_social': _js,
-        'motricidad': _mot.toList(),
+        'atencion': _atencion,
+        'forma_aprende': _formaAprende.toList(),
+        'actividades_dificiles': _currentRows(_actDificiles, _actDificilesCtrl),
+        'seguir_instrucciones': _instrucciones,
+        'actividades_motivan': _currentRows(_motivan, _motivanCtrl),
+        'estrategias_padre': _currentRows(_estrategias, _estrategiasCtrl),
       },
       'sensorial': {
-        'hipersensibilidad': _hiper.toList(),
-        'hiposensibilidad': _hipo.toList(),
-        'comportamientos_repetitivos': _rep.toList(),
-        'intereses_obsesivos': _int.toList(),
+        'distractores': _distractores.toList(),
+        'factores_concentracion': _factores.toList(),
+        'lugar_estudio': _lugarEstudio,
+        'rutinas_estudio': _currentRows(_rutinas, _rutinaCtrl),
+        'pausas': _pausas,
       },
-      'rutinas_regulacion': _currentRows(_rutinas, _rutinaCtrl),
-      'documentos_clinicos': {
-        if (_docDiagnosticoName != null)
-          'evaluacion_profesional': _docDiagnosticoName,
-        if (_planTerapeuticoName != null)
-          'plan_terapeutico_previo': _planTerapeuticoName,
-        if (_medicacionFileName != null) 'medicacion': _medicacionFileName,
-      },
-      if (_medicaciones.isNotEmpty || _medicacionCtrl.text.trim().isNotEmpty)
-        'medicacion_actual':
-            _currentRows(_medicaciones, _medicacionCtrl).join('\n'),
       'intereses': _int.toList(),
       'consentimiento_datos_sensibles': _acceptedPrivacyConsent,
       'consentimiento_informado_version': 'LPDP-29733-v1',
@@ -225,9 +213,6 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       final ninoId = result['id']?.toString() ?? '';
       final requiereScq = editingId == null &&
           (result['requiere_scq'] == true || debeSugerirScqLocal);
-      if (ninoId.isNotEmpty) {
-        await _uploadClinicalFiles(ninoId);
-      }
       ref.invalidate(familiaDashboardProvider);
       setState(() {
         _wizardMode = false;
@@ -242,9 +227,9 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(editingId == null
-                ? 'Paciente registrado. Un terapeuta lo vinculara pronto.'
+                ? 'Niño registrado correctamente.'
                 : 'Registro actualizado correctamente.'),
-            backgroundColor: const Color(0xFF4A624D),
+            backgroundColor: const Color(0xFF4A52D9),
             duration: const Duration(seconds: 4),
           ));
         }
@@ -261,13 +246,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
   }
 
   bool _debeSugerirScq() {
-    final tieneDiagnostico = _diagCtrl.text.trim().isNotEmpty;
-    final tieneMedicacion =
-        _medicacionCtrl.text.trim().isNotEmpty || _medicaciones.isNotEmpty;
-    final tieneDocumento = _docDiagnosticoName != null ||
-        _planTerapeuticoName != null ||
-        _medicacionFileName != null;
-    return !tieneDiagnostico && !tieneMedicacion && !tieneDocumento;
+    return _diagCtrl.text.trim().isEmpty;
   }
 
   void _reset() {
@@ -277,71 +256,23 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     _diagCtrl.clear();
     _date = null;
     _nivelCognitivo = 'Bajo';
-    _mot.clear();
-    _hiper.clear();
-    _hipo.clear();
-    _rep.clear();
-    _int.clear();
+    _atencion = 'Moderado';
+    _formaAprende.clear();
+    _actDificilesCtrl.clear();
+    _actDificiles.clear();
+    _instrucciones = 'Sigue instrucciones simples';
+    _distractores.clear();
+    _factores.clear();
+    _lugarEstudio = 'Escritorio o mesa en casa';
     _rutinaCtrl.clear();
     _rutinas.clear();
-    _medicacionCtrl.clear();
-    _medicaciones.clear();
-    _docDiagnosticoName = null;
-    _docDiagnosticoPath = null;
-    _planTerapeuticoName = null;
-    _planTerapeuticoPath = null;
-    _medicacionFileName = null;
-    _medicacionFilePath = null;
+    _pausas = 'Sí, de forma ocasional';
+    _int.clear();
+    _motivanCtrl.clear();
+    _motivan.clear();
+    _estrategiasCtrl.clear();
+    _estrategias.clear();
     _acceptedPrivacyConsent = false;
-    _com = 'Palabras sueltas';
-    _cv = 'Intermitente';
-    _js = 'Paralelo';
-    _antecedentesExpanded = true;
-  }
-
-  Future<void> _pickClinicalFile(String tipo) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      allowMultiple: false,
-    );
-    final file = result?.files.single;
-    if (file == null) return;
-    setState(() {
-      if (tipo == 'diagnostico') {
-        _docDiagnosticoName = file.name;
-        _docDiagnosticoPath = file.path;
-      }
-      if (tipo == 'plan') {
-        _planTerapeuticoName = file.name;
-        _planTerapeuticoPath = file.path;
-      }
-      if (tipo == 'medicacion') {
-        _medicacionFileName = file.name;
-        _medicacionFilePath = file.path;
-      }
-    });
-  }
-
-  Future<void> _uploadClinicalFiles(String ninoId) async {
-    final service = ref.read(dashboardServiceProvider);
-    final files = [
-      ('evaluacion_profesional', _docDiagnosticoPath, _docDiagnosticoName),
-      ('plan_terapeutico_previo', _planTerapeuticoPath, _planTerapeuticoName),
-      ('medicacion', _medicacionFilePath, _medicacionFileName),
-    ];
-
-    for (final item in files) {
-      final path = item.$2;
-      final name = item.$3;
-      if (path == null || name == null) continue;
-      await service.subirDocumentoClinico(
-        ninoId: ninoId,
-        tipo: item.$1,
-        path: path,
-        fileName: name,
-      );
-    }
   }
 
   List<String> _listFrom(dynamic value) {
@@ -349,14 +280,10 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     return [];
   }
 
-  String? _documentName(Map<String, dynamic> docs, String key) {
-    final value = docs[key];
-    if (value is Map) return value['nombre']?.toString();
-    return value?.toString();
-  }
-
   void _editarPaciente(PacienteDashboard p) {
     final fecha = p.fechaNacimiento;
+    final hitos = p.hitos;
+    final sensorial = p.sensorial;
     setState(() {
       _reset();
       _editingNinoId = p.id;
@@ -367,26 +294,27 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       _date = fecha != null ? DateTime.tryParse(fecha) : null;
       _diagCtrl.text = p.diagnostico ?? '';
       _nivelCognitivo = p.nivelCognitivo.isNotEmpty ? p.nivelCognitivo : 'Bajo';
-      _com = p.hitos['comunicacion']?.toString() ?? 'Palabras sueltas';
-      _cv = p.hitos['contacto_visual']?.toString() ?? 'Intermitente';
-      _js = p.hitos['juego_social']?.toString() ?? 'Paralelo';
-      _mot.addAll(_listFrom(p.hitos['motricidad']));
-      _hiper.addAll(_listFrom(p.sensorial['hipersensibilidad']));
-      _hipo.addAll(_listFrom(p.sensorial['hiposensibilidad']));
-      _rep.addAll(_listFrom(p.sensorial['comportamientos_repetitivos']));
+
+      // Perfil de aprendizaje (paso 2)
+      _atencion = hitos['atencion']?.toString() ?? _atencion;
+      _formaAprende.addAll(_listFrom(hitos['forma_aprende']));
+      _actDificiles.addAll(_listFrom(hitos['actividades_dificiles']));
+      _instrucciones =
+          hitos['seguir_instrucciones']?.toString() ?? _instrucciones;
+
+      // Entorno y aprendizaje (paso 3)
+      _distractores.addAll(_listFrom(sensorial['distractores']));
+      _factores.addAll(_listFrom(sensorial['factores_concentracion']));
+      _lugarEstudio = sensorial['lugar_estudio']?.toString() ?? _lugarEstudio;
+      _rutinas.addAll(_listFrom(sensorial['rutinas_estudio']));
+      _pausas = sensorial['pausas']?.toString() ?? _pausas;
+
+      // Intereses y resumen (paso 4)
+      _motivan.addAll(_listFrom(hitos['actividades_motivan']));
+      _estrategias.addAll(_listFrom(hitos['estrategias_padre']));
       _int.addAll(p.intereses.isNotEmpty
           ? p.intereses
-          : _listFrom(p.sensorial['intereses_obsesivos']));
-      _rutinas.addAll(p.rutinasRegulacion);
-      _medicaciones.addAll((p.medicacionActual ?? '')
-          .split(RegExp(r'[\n;]'))
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty));
-      _docDiagnosticoName =
-          _documentName(p.documentosClinicos, 'evaluacion_profesional');
-      _planTerapeuticoName =
-          _documentName(p.documentosClinicos, 'plan_terapeutico_previo');
-      _medicacionFileName = _documentName(p.documentosClinicos, 'medicacion');
+          : _listFrom(sensorial['intereses_obsesivos']));
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && _pc.hasClients) _pc.jumpToPage(0);
@@ -542,11 +470,18 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                 )),
             const SizedBox(height: 6),
             Text(
-                '${data.totalPacientes} paciente${data.totalPacientes != 1 ? 's' : ''} registrado${data.totalPacientes != 1 ? 's' : ''}',
+                '${data.totalPacientes} niño${data.totalPacientes != 1 ? 's' : ''} registrado${data.totalPacientes != 1 ? 's' : ''}',
                 style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF5A738E))),
+            const SizedBox(height: 4),
+            Text(
+                'Aquí podrás consultar recomendaciones y seguimiento del aprendizaje.',
+                style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: _kSub)),
             const SizedBox(height: 16),
             Row(
               children: [
@@ -610,15 +545,15 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
   Widget _buildWizard(bool canGoBack) {
     const titles = [
       'Datos básicos',
-      'Hitos del desarrollo',
-      'Perfil sensorial',
-      'Intereses'
+      'Perfil de aprendizaje',
+      'Entorno y aprendizaje',
+      'Intereses y resumen'
     ];
     const subs = [
       'Información general del niño.',
-      'Describe el nivel de desarrollo observado.',
-      'Características sensoriales del niño.',
-      'Intereses principales y resumen.',
+      'Cómo aprende mejor y qué le resulta difícil.',
+      'Distractores, lugar y rutinas de estudio.',
+      'Intereses, motivación y resumen del perfil.',
     ];
     return SafeArea(
         child: Column(children: [
@@ -652,7 +587,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                 borderRadius: BorderRadius.circular(10),
                 child: LinearProgressIndicator(
                   value: (_step + 1) / 4,
-                  backgroundColor: const Color(0xFFECEAE2),
+                  backgroundColor: const Color(0xFFD8F3FF),
                   valueColor: const AlwaysStoppedAnimation<Color>(_kA),
                   minHeight: 8,
                 ),
@@ -748,7 +683,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
               onPressed: onBack),
           const SizedBox(width: 4),
         ],
-        // Logotipo RimAI premium con doble círculo verde coherente y texto oscuro
+        // Logotipo SendaIA premium con doble círculo lila coherente y texto oscuro
         SizedBox(
           width: 24,
           height: 14,
@@ -779,7 +714,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        Text('RimAI',
+        Text('SendaIA',
             style: GoogleFonts.plusJakartaSans(
                 color: _kText, fontSize: 18, fontWeight: FontWeight.bold)),
         const Spacer(),
@@ -1033,12 +968,19 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   )),
                 ),
                 const SizedBox(height: 16),
-                _field('DIAGNÓSTICO (OPCIONAL)', 'Ej: TEA nivel 1', _diagCtrl),
+                _field('DIAGNÓSTICO PREVIO DE TDAH (OPCIONAL)',
+                    'Ej: TDAH diagnosticado por especialista', _diagCtrl),
+                const SizedBox(height: 8),
+                Text(
+                  'Registro opcional del diagnóstico ya realizado por un profesional. Aquí no se hace ningún diagnóstico automático.',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 11, color: _kSub, height: 1.4),
+                ),
               ])),
         ]),
       );
 
-  // ── Page 2: Hitos del desarrollo ──────────────────────────────────────────
+  // ── Page 2: Perfil de aprendizaje ─────────────────────────────────────────
   Widget _page2() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -1047,34 +989,46 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 _choice(
-                    'NIVEL DE COMUNICACIÓN',
-                    [
-                      'No verbal',
-                      'Palabras sueltas',
-                      'Frases cortas',
-                      'Fluido'
-                    ],
-                    _com,
-                    (v) => setState(() => _com = v)),
-                const SizedBox(height: 20),
-                _choice(
-                    'CONTACTO VISUAL',
-                    ['Nulo', 'Intermitente', 'Sostenido'],
-                    _cv,
-                    (v) => setState(() => _cv = v)),
-                const SizedBox(height: 20),
-                _choice('JUEGO SOCIAL', ['Aislado', 'Paralelo', 'Interactúa'],
-                    _js, (v) => setState(() => _js = v)),
+                    'NIVEL DE ATENCIÓN / CONCENTRACIÓN',
+                    ['Bajo', 'Moderado', 'Alto'],
+                    _atencion,
+                    (v) => setState(() => _atencion = v)),
                 const SizedBox(height: 20),
                 _multi(
-                    'MOTRICIDAD',
-                    ['Camina solo', 'Sube escaleras', 'Pinza fina', 'Corre'],
-                    _mot),
+                    'FORMA EN QUE APRENDE MEJOR',
+                    [
+                      'Visual (imágenes, demos, esquemas)',
+                      'Auditivo (explicaciones y lectura en voz alta)',
+                      'Práctico (manipular y experimentar)',
+                      'Lectura y escritura',
+                      'Con apoyo de otra persona'
+                    ],
+                    _formaAprende),
+                const SizedBox(height: 20),
+                _editableRows(
+                  label: 'ACTIVIDADES QUE LE RESULTAN DIFÍCILES',
+                  hint: 'Ej: escribir textos, problemas de lectura, matemáticas',
+                  controller: _actDificilesCtrl,
+                  rows: _actDificiles,
+                  onAdd: () => _addRow(_actDificiles, _actDificilesCtrl),
+                  onRemove: (row) => _removeRow(_actDificiles, row),
+                ),
+                const SizedBox(height: 20),
+                _choice(
+                    'CAPACIDAD PARA SEGUIR INSTRUCCIONES',
+                    [
+                      'Necesita apoyo paso a paso',
+                      'Sigue instrucciones simples',
+                      'Sigue instrucciones de varias pasos',
+                      'Le cuesta seguir instrucciones'
+                    ],
+                    _instrucciones,
+                    (v) => setState(() => _instrucciones = v)),
               ])),
         ]),
       );
 
-  // ── Page 3: Perfil sensorial e intereses ──────────────────────────────────
+  // ── Page 3: Entorno y aprendizaje ─────────────────────────────────────────
   Widget _page3() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -1083,45 +1037,59 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 _multi(
-                    'HIPERSENSIBILIDAD (evita)',
+                    'PRINCIPALES DISTRACTORES',
                     [
-                      'Ruidos fuertes',
-                      'Texturas ásperas',
-                      'Luces brillantes',
-                      'Multitudes',
-                      'Etiquetas'
+                      'Ruidos',
+                      'Pantallas o televisión',
+                      'Movimiento de otras personas',
+                      'Conversaciones alrededor',
+                      'Teléfono o tablet',
+                      'Temperatura o luces'
                     ],
-                    _hiper),
+                    _distractores),
                 const SizedBox(height: 20),
                 _multi(
-                    'HIPOSENSIBILIDAD (busca)',
+                    'FACTORES QUE DIFICULTAN SU CONCENTRACIÓN',
                     [
-                      'Dolor',
-                      'Movimiento constante',
-                      'Presión profunda',
-                      'Morder objetos'
+                      'Poco sueño',
+                      'Cansancio',
+                      'Hambre',
+                      'Ansiedad o preocupaciones',
+                      'Demasiados estímulos',
+                      'Falta de rutina'
                     ],
-                    _hipo),
+                    _factores),
                 const SizedBox(height: 20),
-                _multi(
-                    'COMPORTAMIENTOS REPETITIVOS',
+                _choice(
+                    'LUGAR HABITUAL DE ESTUDIO',
                     [
-                      'Aleteo de manos',
-                      'Balanceo',
-                      'Ecolalia',
-                      'Alinear juguetes',
-                      'Puntillas'
+                      'Escritorio o mesa en casa',
+                      'Su habitación',
+                      'Comedor o sala',
+                      'Biblioteca',
+                      'Otro lugar'
                     ],
-                    _rep),
+                    _lugarEstudio,
+                    (v) => setState(() => _lugarEstudio = v)),
                 const SizedBox(height: 20),
                 _editableRows(
-                  label: 'RUTINAS DE REGULACION',
-                  hint: 'Ej: presion profunda, balanceo, objeto preferido',
+                  label: 'RUTINAS DE ESTUDIO',
+                  hint: 'Ej: 20 minutos de tarea y 5 minutos de descanso',
                   controller: _rutinaCtrl,
                   rows: _rutinas,
                   onAdd: () => _addRow(_rutinas, _rutinaCtrl),
                   onRemove: (row) => _removeRow(_rutinas, row),
                 ),
+                const SizedBox(height: 20),
+                _choice(
+                    'NECESIDAD DE PAUSAS DURANTE LAS ACTIVIDADES',
+                    [
+                      'Sí, con frecuencia',
+                      'Sí, de forma ocasional',
+                      'No necesita pausas'
+                    ],
+                    _pausas,
+                    (v) => setState(() => _pausas = v)),
               ])),
         ]),
       );
@@ -1147,64 +1115,31 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                     ],
                     _int),
                 const SizedBox(height: 24),
-                InkWell(
-                  onTap: () => setState(
-                      () => _antecedentesExpanded = !_antecedentesExpanded),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    child: Row(
-                      children: [
-                        Expanded(
-                            child: _label(
-                                'ANTECEDENTES CLÍNICOS Y MEDICACIÓN (OPCIONAL)')),
-                        Icon(
-                          _antecedentesExpanded
-                              ? Icons.keyboard_arrow_up
-                              : Icons.keyboard_arrow_down,
-                          color: const Color(0xFFB08C68),
-                          size: 22,
-                        ),
-                      ],
-                    ),
-                  ),
+                _editableRows(
+                  label: 'ACTIVIDADES QUE LO MOTIVAN',
+                  hint: 'Ej: juegos de mesa, pintar, deporte, música',
+                  controller: _motivanCtrl,
+                  rows: _motivan,
+                  onAdd: () => _addRow(_motivan, _motivanCtrl),
+                  onRemove: (row) => _removeRow(_motivan, row),
                 ),
-                if (_antecedentesExpanded) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    'Si cuentas con evaluaciones previas, planes terapéuticos o recetas de medicación, adjúntalos aquí. Son completamente opcionales.',
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12, color: _kSub, height: 1.4),
-                  ),
-                  const SizedBox(height: 16),
-                  _fileButton(
-                      'Evaluación de neurólogo/psiquiatra',
-                      _docDiagnosticoName,
-                      () => _pickClinicalFile('diagnostico')),
-                  const SizedBox(height: 10),
-                  _fileButton('Plan terapéutico previo', _planTerapeuticoName,
-                      () => _pickClinicalFile('plan')),
-                  const SizedBox(height: 10),
-                  _fileButton('Documento de medicación', _medicacionFileName,
-                      () => _pickClinicalFile('medicacion')),
-                  const SizedBox(height: 16),
-                  _editableRows(
-                    label: 'MEDICACIÓN ACTUAL',
-                    hint: 'Nombre, dosis o indicaciones si aplica',
-                    controller: _medicacionCtrl,
-                    rows: _medicaciones,
-                    onAdd: () => _addRow(_medicaciones, _medicacionCtrl),
-                    onRemove: (row) => _removeRow(_medicaciones, row),
-                  ),
-                ],
+                const SizedBox(height: 20),
+                _editableRows(
+                  label: 'ESTRATEGIAS QUE UTILIZAS ACTUALMENTE (PADRE/TUTOR)',
+                  hint: 'Ej: horario fijo, temporizador, instrucciones de una en una',
+                  controller: _estrategiasCtrl,
+                  rows: _estrategias,
+                  onAdd: () => _addRow(_estrategias, _estrategiasCtrl),
+                  onRemove: (row) => _removeRow(_estrategias, row),
+                ),
                 const SizedBox(height: 24),
-                _label('RESUMEN DE REGISTRO'),
+                _label('RESUMEN DEL PERFIL DE APRENDIZAJE'),
                 const SizedBox(height: 4),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF5EE),
+                    color: const Color(0xFFF4F5FF),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Column(
@@ -1215,18 +1150,26 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                           _nameCtrl.text.trim().isEmpty
                               ? '—'
                               : _nameCtrl.text.trim()),
-                      const Divider(color: Color(0xFFE2E0D9), height: 16),
+                      const Divider(color: Color(0xFFC8E9F7), height: 16),
                       _summaryRow('Fecha nac.:',
                           _dateCtrl.text.isEmpty ? '—' : _dateCtrl.text),
-                      const Divider(color: Color(0xFFE2E0D9), height: 16),
+                      const Divider(color: Color(0xFFC8E9F7), height: 16),
                       _summaryRow(
                           'Diagnóstico:',
                           _diagCtrl.text.trim().isEmpty
                               ? 'No especificado'
                               : _diagCtrl.text.trim()),
-                      const Divider(color: Color(0xFFE2E0D9), height: 16),
-                      _summaryRow('Comunicación:', _com),
-                      const Divider(color: Color(0xFFE2E0D9), height: 16),
+                      const Divider(color: Color(0xFFC8E9F7), height: 16),
+                      _summaryRow('Atención:', _atencion),
+                      const Divider(color: Color(0xFFC8E9F7), height: 16),
+                      _summaryRow(
+                          'Aprende mejor con:',
+                          _formaAprende.isEmpty
+                              ? 'Sin preferencia registrada'
+                              : _formaAprende.join(', ')),
+                      const Divider(color: Color(0xFFC8E9F7), height: 16),
+                      _summaryRow('Lugar de estudio:', _lugarEstudio),
+                      const Divider(color: Color(0xFFC8E9F7), height: 16),
                       _summaryRow(
                           'Intereses:',
                           _int.isEmpty
@@ -1237,7 +1180,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE2ECE0),
+                          color: const Color(0xFFF4F5FF),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
@@ -1246,15 +1189,15 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                             const Padding(
                               padding: EdgeInsets.only(top: 2),
                               child: Icon(Icons.info_outline,
-                                  color: Color(0xFF536A55), size: 16),
+                                  color: Color(0xFF4E56D9), size: 16),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                                 child: Text(
-                              'Al registrar, el paciente quedará en espera de asignación a un terapeuta.',
+                              'Al registrar, el perfil de aprendizaje quedará guardado para generar recomendaciones personalizadas para ti.',
                               style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
-                                  color: const Color(0xFF334435),
+                                  color: const Color(0xFF2E34A8),
                                   fontWeight: FontWeight.w500,
                                   height: 1.3),
                             )),
@@ -1267,7 +1210,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E0D9)),
+                          border: Border.all(color: const Color(0xFFC8E9F7)),
                         ),
                         child: CheckboxListTile(
                           value: _acceptedPrivacyConsent,
@@ -1285,7 +1228,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                             ),
                           ),
                           subtitle: Text(
-                            'Confirmo el tratamiento de datos sensibles del nino conforme a la Ley N. 29733 y entiendo que RimAI es una herramienta de apoyo clinico, no un diagnostico.',
+                            'Confirmo el tratamiento de datos sensibles del nino conforme a la Ley N. 29733 y entiendo que SendaIA es una herramienta de apoyo al aprendizaje, no un diagnostico.',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: _kSub,
@@ -1451,52 +1394,6 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ],
       );
 
-  Widget _fileButton(String label, String? fileName, VoidCallback onPressed) {
-    final hasFile = fileName != null;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          decoration: BoxDecoration(
-            color: hasFile ? _kA.withOpacity(0.08) : Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: hasFile ? _kA : _kBdr,
-              width: hasFile ? 1.2 : 1.0,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                hasFile ? Icons.check_circle_outline : Icons.attach_file,
-                size: 18,
-                color: hasFile ? _kA : _kSub,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  fileName ?? label,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 13,
-                    color: hasFile ? const Color(0xFF2D5A35) : _kSub,
-                  ),
-                ),
-              ),
-              if (hasFile) const Icon(Icons.check, size: 16, color: _kA),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _choice(String label, List<String> opts, String current,
           ValueChanged<String> onChanged) =>
       Column(
@@ -1607,21 +1504,21 @@ _StatusBadgeInfo _getStatusBadgeInfo(String estado) {
   return switch (estado) {
     'plan_activo' => const _StatusBadgeInfo(
         icon: Icons.rocket_launch_outlined,
-        label: 'Plan activo',
-        bgColor: Color(0xFFECFDF5),
-        borderColor: Color(0xFFA7F3D0),
-        textColor: Color(0xFF047857),
+        label: 'Perfil de aprendizaje activo',
+        bgColor: Color(0xFFF5F0FF),
+        borderColor: Color(0xFFD6D0FF),
+        textColor: Color(0xFF3F47C9),
       ),
     'listo_para_plan' => const _StatusBadgeInfo(
         icon: Icons.check_circle_outline,
-        label: 'Listo para plan',
+        label: 'Perfil de aprendizaje completo',
         bgColor: Color(0xFFEFF6FF),
         borderColor: Color(0xFFBFDBFE),
         textColor: Color(0xFF1D4ED8),
       ),
     'vinculado_terapeuta' => const _StatusBadgeInfo(
         icon: Icons.people_outline,
-        label: 'Terapeuta asignado',
+        label: 'Perfil de aprendizaje registrado',
         bgColor: Color(0xFFFFFBEB),
         borderColor: Color(0xFFFDE68A),
         textColor: Color(0xFFB45309),
@@ -1634,8 +1531,8 @@ _StatusBadgeInfo _getStatusBadgeInfo(String estado) {
         textColor: Color(0xFFDC2626),
       ),
     _ => const _StatusBadgeInfo(
-        icon: Icons.access_time_outlined,
-        label: 'Esperando terapeuta',
+        icon: Icons.check_circle_outline,
+        label: 'Perfil de aprendizaje registrado',
         bgColor: Color(0xFFEFF5FA),
         borderColor: Color(0xFFD5E3F0),
         textColor: Color(0xFF4A688C),
@@ -2026,39 +1923,34 @@ class _PatientCard extends ConsumerWidget {
               ],
             ),
           ),
-        ],
-        if (p.planActivo != null) ...[
-          const SizedBox(height: 10),
-          Row(children: [
-            const Icon(Icons.spatial_audio_off, size: 14, color: _kSub),
-            const SizedBox(width: 6),
-            Expanded(
-                child: Text(p.planActivo!,
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12, color: _kSub))),
-          ]),
+        ] else ...[
           const SizedBox(height: 12),
-          SizedBox(
+          Container(
             width: double.infinity,
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.play_circle_outline, size: 18),
-              label: Text(
-                'Ver plan publicado',
-                style: GoogleFonts.plusJakartaSans(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _kBdr.withValues(alpha: 0.7)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.lightbulb_outline,
+                    size: 16, color: Color(0xFFB08C68)),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    'Próximamente podrás recibir recomendaciones personalizadas para apoyar el aprendizaje de tu hijo.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      height: 1.35,
+                      color: _kSub,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-              ),
-              onPressed: () => context.go('/familia/plan/${p.id}'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _kA,
-                foregroundColor: _kText,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              ],
             ),
           ),
         ],

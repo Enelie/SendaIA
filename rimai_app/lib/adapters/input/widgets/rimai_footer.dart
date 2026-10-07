@@ -22,11 +22,11 @@ class RimAIFooter extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            'RIMAI © 2026',
+            'SENDAIA © 2026',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF9E8A84).withValues(alpha: 0.6),
+              color: const Color.fromARGB(255, 132, 140, 158).withValues(alpha: 0.6),
               letterSpacing: 2.5,
             ),
           ),
@@ -41,7 +41,7 @@ class RimAIFooter extends StatelessWidget {
       height: 10,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFFB8D6B2).withValues(alpha: opacity),
+        color: const Color(0xFFBAB0FF).withValues(alpha: opacity),
       ),
     );
   }

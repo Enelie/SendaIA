@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 // Constantes de la paleta
-const Color _kBrand = Color(0xFFB8D6B2);
-const Color _kTabBg = Color(0xFFF2EBE1);
-const Color _kTextPrimary = Color(0xFF63524E);
-const Color _kBorder = Color(0xFFD9C5BF);
+const Color _kBrand = Color(0xFFBAB0FF);
+const Color _kTabBg = Color(0xFFD8F3FF);
+const Color _kTextPrimary = Color.fromARGB(255, 80, 78, 99);
+const Color _kBorder = Color(0xFFC8E9F7);
 const Color _kSurface = Color(0xFFFFFFFF);
 
 /// Enum para indicar cuál tab está activo

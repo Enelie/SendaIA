@@ -9,9 +9,9 @@ import 'package:rimai_app/adapters/input/widgets/rimai_top_bar.dart';
 import 'package:rimai_app/core/providers/dashboard_providers.dart';
 import 'package:rimai_app/core/providers/pmv2_providers.dart';
 
-const _kPrimary = Color(0xFFA43714);
-const _kBg = Color(0xFFFFF8F2);
-const _kSurface = Color(0xFFFAF2E9);
+const _kPrimary = Color(0xFF5CBF95);
+const _kBg = Color(0xFFE9F8FF);
+const _kSurface = Color(0xFFF6FEFF);
 const _kText = Color(0xFF1E1B16);
 const _kSubtext = Color(0xFF58423B);
 
@@ -49,7 +49,7 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
     _messages.add(
       ChatMessage(
         text:
-            '¡Hola! Soy tu asistente de IA especializado de RimAI. Estoy aquí para ayudarte a comprender mejor el desarrollo de tu hijo, resolver dudas sobre el autismo (TEA), consultar sus rutinas de regulación o ver qué actividades tenemos preparadas para su sesión de hoy. ¿De quién te gustaría conversar hoy?',
+            '¡Hola! Soy tu asistente de IA.\n\nEstoy aquí para ayudarte a apoyar el aprendizaje de tu hijo con TDAH. Puedes consultarme sobre estrategias de estudio, organización de rutinas, concentración, motivación y actividades para realizar en casa.\n\n¿En qué te gustaría recibir ayuda hoy?',
         isUser: false,
         timestamp: DateTime.now(),
       ),
@@ -114,7 +114,7 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
     final query = text.toLowerCase().trim();
     final nombre = perfil?.nombre ?? 'tu niño';
 
-    // 1. Preguntas sobre actividades del plan / sesión actual
+    // 1. Actividades sugeridas para hoy
     if (query.contains('actividad') ||
         query.contains('actividades') ||
         query.contains('sesion') ||
@@ -122,12 +122,12 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
         query.contains('plan') ||
         query.contains('hoy')) {
       if (plan == null || plan.actividades.isEmpty) {
-        return 'Actualmente no veo un plan de actividades activo o publicado para $nombre. Te sugiero consultar con su terapeuta para que diseñe y apruebe la sesión correspondiente.';
+        return 'Todavía no tienes actividades sugeridas para $nombre. Pronto podrás recibir recomendaciones personalizadas para apoyar su aprendizaje; mientras tanto, puedes preguntarme por estrategias de estudio, organización o concentración.';
       }
 
       final buffer = StringBuffer();
       buffer.writeln(
-          'Para la sesión de hoy de **$nombre** (Sesión ${plan.sesionNumero}), tenemos programadas las siguientes actividades:');
+          'Para el día de hoy de **$nombre** te sugiero acompañar estas actividades en casa:');
       buffer.writeln();
       for (var i = 0; i < plan.actividades.length; i++) {
         final act = plan.actividades[i];
@@ -142,118 +142,92 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
       }
       buffer.writeln();
       buffer.writeln(
-          '¿Tienes alguna duda sobre cómo ejecutar alguna de ellas en casa?');
+          '¿Tienes alguna duda sobre cómo acompañar alguna de ellas en casa?');
       return buffer.toString();
     }
 
-    // 2. Preguntas sobre rutinas de regulación
-    if (query.contains('regular') ||
-        query.contains('regulacion') ||
-        query.contains('regulación') ||
-        query.contains('crisis') ||
-        query.contains('calmar') ||
-        query.contains('rutina') ||
-        query.contains('rutinas')) {
-      if (perfil == null || perfil.rutinasRegulacion.isEmpty) {
-        return 'No tienes registradas rutinas de regulación específicas para $nombre en su perfil familiar.\n\n**Consejo general de regulación sensorial:**\nSi notas que $nombre se encuentra sobreestimulado o desregulado:\n1. **Espacio seguro:** Llévalo a un ambiente con baja estimulación visual y auditiva.\n2. **Presión profunda:** Muchos niños con TEA responden positivamente a abrazos contenedores o mantas con peso.\n3. **Anticipación:** Háblale con voz suave explicando pausadamente lo que va a ocurrir para mitigar la ansiedad.\n\nTe recomiendo registrar sus rutinas preferidas en el botón "Editar registro" de su tarjeta en el Inicio para que el terapeuta también las considere.';
+    // 2. Rutinas y organización del estudio
+    if (query.contains('rutina') ||
+        query.contains('rutinas') ||
+        query.contains('estudio') ||
+        query.contains('tarea') ||
+        query.contains('tareas') ||
+        query.contains('horario') ||
+        query.contains('organiz')) {
+      final rutinas = _rutinasDeEstudio(perfil);
+      if (rutinas.isEmpty) {
+        return 'Aún no has registrado rutinas de estudio para $nombre.\n\n**Consejo general de organización:**\n1. **Horario fijo:** Mantener el mismo horario de estudio cada día.\n2. **Bloques cortos:** Dividir la tarea en tramos de 15 a 20 minutos con una pausa breve.\n3. **Instrucciones de una en una:** Dar una indicación y esperar a que la complete antes de la siguiente.\n\nPuedes registrar sus rutinas de estudio en el botón "Editar registro" de su tarjeta en el Inicio.';
       }
 
       final buffer = StringBuffer();
       buffer.writeln(
-          'Aquí tienes las rutinas de regulación que has registrado para **$nombre**:');
-      for (final r in perfil.rutinasRegulacion) {
+          'Aquí tienes las rutinas de estudio que has registrado para **$nombre**:');
+      for (final r in rutinas) {
         buffer.writeln('• $r');
       }
       buffer.writeln();
       buffer.writeln(
-          'Estas rutinas son esenciales para el terapeuta al planificar las actividades. ¿Te gustaría saber más sobre cómo aplicarlas durante las crisis sensoriales?');
+          '¿Te gustaría que te sugiera cómo mantener estas rutinas en los días de más carga?');
       return buffer.toString();
     }
 
-    // 3. Preguntas sobre medicación
-    if (query.contains('medicacion') ||
-        query.contains('medicación') ||
-        query.contains('medicamento') ||
-        query.contains('medicamentos') ||
-        query.contains('remedio')) {
-      if (perfil == null ||
-          perfil.medicacionActual == null ||
-          perfil.medicacionActual!.trim().isEmpty) {
-        return 'No tienes registrada ninguna medicación actual para $nombre.\n\n*Nota:* Recuerda que cualquier administración de medicamentos debe estar siempre supervisada y recetada por su neuropediatra o pediatra de cabecera.';
-      }
-      return 'De acuerdo al perfil clínico registrado para **$nombre**, su medicación actual consiste en:\n\n${perfil.medicacionActual}\n\n*Recuerda:* Si hay algún cambio en su dosis o tratamiento, asegúrate de actualizar el registro en la aplicación familiar y notificar a su terapeuta.';
-    }
-
-    // 4. Preguntas sobre objetivos de intervención
-    if (query.contains('objetivo') ||
-        query.contains('objetivos') ||
-        query.contains('meta') ||
-        query.contains('metas')) {
-      if (perfil == null || perfil.objetivosIntervencion.isEmpty) {
-        return 'Aún no se han configurado objetivos terapéuticos específicos para $nombre en su perfil clínico. El terapeuta los establecerá tan pronto valide clínicamente el caso.';
-      }
-      final buffer = StringBuffer();
-      buffer.writeln(
-          'Los objetivos terapéuticos actuales establecidos para **$nombre** son:');
-      for (var i = 0; i < perfil.objetivosIntervencion.length; i++) {
-        buffer.writeln('${i + 1}. ${perfil.objetivosIntervencion[i]}');
-      }
-      return buffer.toString();
-    }
-
-    // 5. Preguntas generales sobre TEA
+    // 3. Preguntas generales sobre TDAH
     if (query.contains('que es') ||
         query.contains('qué es') ||
-        query.contains('tea') ||
-        query.contains('autismo')) {
-      return 'El **Trastorno del Espectro Autista (TEA)** es una condición del neurodesarrollo que influye en cómo las personas perciben el mundo e interactúan con los demás. Se caracteriza principalmente por:\n\n'
-          '• **Diferencias en la comunicación y el juego social:** Van desde la ausencia del habla o ecolalia, hasta dificultades en interpretar expresiones faciales u metáforas.\n'
-          '• **Intereses enfocados y conductas repetitivas:** Gusto por mantener rutinas fijas, movimientos como el aleteo (stimming) que les ayudan a autorregularse, e intereses profundos en temas específicos (como trenes o dinosaurios).\n'
-          '• **Procesamiento sensorial atípico:** Mayor sensibilidad (hipersensibilidad) o menor sensibilidad (hiposensibilidad) a ruidos, luces, texturas o movimientos.\n\n'
-          'Cada niño es único y progresa a su propio ritmo. ¡El apoyo oportuno y el trabajo conjunto en casa y terapia marcan una gran diferencia!';
+        query.contains('tdah') ||
+        query.contains('deficit de atencion') ||
+        query.contains('déficit de atención')) {
+      return 'El **Trastorno por Déficit de Atención e Hiperactividad (TDAH)** es una condición del neurodesarrollo que puede influir en la atención, la organización y el control de impulsos. Puede presentarse principalmente con dificultades de atención, con hiperactividad e impulsividad, o con una combinación de ambas.\n\n'
+          'Cada niño lo vive de manera distinta. En casa y en la escuela, las rutinas claras, las pausas y el reconocimiento de sus avances ayudan mucho a su aprendizaje.';
     }
 
-    if (query.contains('aleteo') ||
-        query.contains('stimming') ||
-        query.contains('repetitivo') ||
-        query.contains('balanceo')) {
-      return 'Los comportamientos repetitivos, como el **aleteo de manos (stimming)** o el balanceo, son herramientas naturales de **autorregulación**. Los niños con TEA los utilizan para calmarse ante la sobrecarga sensorial o emocional, o para expresar emoción extrema.\n\n'
-          '**¿Qué hacer?**\n'
-          '• No reprimas el stimming a menos que sea autolesivo.\n'
-          '• Trata de identificar el detonante: ¿es por entusiasmo, aburrimiento o ansiedad por ruido?\n'
-          '• Si es por estrés, acompáñalo a un lugar tranquilo y utiliza sus objetos reguladores o presiones profundas.';
+    // 4. Concentración, impulsividad y organización
+    if (query.contains('concentr') ||
+        query.contains('impulsiv') ||
+        query.contains('hiperactiv') ||
+        query.contains('organizar')) {
+      return 'Para acompañar a un niño con TDAH cuando le cuesta concentrarse u organizarse, puede ayudar dividir las tareas en pasos breves, usar instrucciones claras de una en una y establecer rutinas previsibles. También conviene reconocer sus avances y acordar pausas cortas antes de que la atención caiga.\n\n'
+          'Si quieres, puedo sugerirte estrategias concretas para la hora de estudio en casa.';
     }
 
-    if (query.contains('ruido') ||
+    // 5. Distractores y ambiente de estudio
+    if (query.contains('distractor') ||
+        query.contains('distrae') ||
+        query.contains('distraer') ||
+        query.contains('ruido') ||
         query.contains('ruidos') ||
-        query.contains('hiper') ||
         query.contains('sensorial')) {
-      final tieneHipersensibilidad =
-          perfil?.perfilSensorial['hipersensibilidad'] != null &&
-              (perfil!.perfilSensorial['hipersensibilidad'] as List).isNotEmpty;
-
-      final evitaciones = tieneHipersensibilidad
-          ? '\n\nPara **$nombre**, tienes registrado que suele evitar: ' +
-              (perfil.perfilSensorial['hipersensibilidad'] as List)
-                  .join(', ')
-                  .toLowerCase() +
-              '.'
+      final distractores = _listaDePerfil(perfil, 'distractores');
+      final conocidos = distractores.isNotEmpty
+          ? '\n\nPara **$nombre** tienes registrados estos distractores: ${distractores.join(', ').toLowerCase()}.'
           : '';
 
-      return 'La **hipersensibilidad sensorial** es muy común. Estímulos cotidianos como la licuadora, el secador de pelo o centros comerciales concurridos pueden ser percibidos como dolorosos o abrumadores.$evitaciones\n\n'
-          '**Consejos prácticos para manejarlo:**\n'
-          '1. **Uso de audífonos de cancelación de ruido:** Excelentes para salidas o ruidos imprevistos en casa.\n'
-          '2. **Anticipación visual o verbal:** "Hijo, voy a encender la licuadora, ponte tus audífonos".\n'
-          '3. **Zonas de calma:** Tener una pequeña carpa o rincón en casa con luces tenues y cojines suaves donde pueda refugiarse.';
+      return 'Los distractores reducen el tiempo en que el niño puede mantenerse enfocado.$conocidos\n\n'
+          '**Consejos prácticos:**\n'
+          '1. **Mesa preparada:** Deja solo lo necesario sobre la mesa y guarda el resto.\n'
+          '2. **Sin pantallas cerca:** Alejar televisión, teléfono y tablet del lugar de estudio.\n'
+          '3. **Pausa antes de empezar:** Un descanso corto antes de la tarea ayuda a entrar en foco.';
     }
 
     // 6. Fallback amigable
-    return 'Entiendo tu consulta. Como asistente de IA especializado en TEA y en la evolución de **$nombre**, te comento que es ideal reforzar siempre la estimulación positiva en casa. \n\nPuedes preguntarme sobre:\n'
-        '• Las actividades de la sesión de hoy (ej. "*¿Qué actividades tiene hoy?*").\n'
-        '• Sus rutinas de regulación sensorial (ej. "*¿Cómo puedo ayudarlo a regularse?*").\n'
-        '• Sus objetivos terapéuticos o medicación registrada.\n'
-        '• Consultas generales de TEA (ej. "*¿Qué es el aleteo?*", "*Manejo de hipersensibilidad*").\n\n'
-        '¿En qué más te gustaría profundizar para acompañar a $nombre hoy?';
+    return 'Entiendo tu consulta. Soy tu asistente de apoyo para el aprendizaje de **$nombre**.\n\nPuedes preguntarme sobre:\n'
+        '• Estrategias de estudio (ej. "*¿Cómo organizar su tiempo de estudio?*").\n'
+        '• Concentración y motivación (ej. "*¿Cómo mejorar su concentración?*").\n'
+        '• Distractores y ambiente de estudio (ej. "*¿Qué suele distraerlo más?*").\n'
+        '• Información general sobre el TDAH (ej. "*¿Qué es el TDAH?*").\n\n'
+        '¿En qué te gustaría recibir ayuda hoy?';
+  }
+
+  List<String> _rutinasDeEstudio(PacientePerfil? perfil) {
+    final guardadas = _listaDePerfil(perfil, 'rutinas_estudio');
+    if (guardadas.isNotEmpty) return guardadas;
+    return perfil?.rutinasRegulacion ?? [];
+  }
+
+  List<String> _listaDePerfil(PacientePerfil? perfil, String clave) {
+    final valor = perfil?.perfilSensorial[clave];
+    if (valor is List) return valor.map((e) => e.toString()).toList();
+    return [];
   }
 
   @override
@@ -348,7 +322,7 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
                                     _messages.add(
                                       ChatMessage(
                                         text:
-                                            'Cambiando el asistente al contexto de **$pName**. Ahora mis respuestas considerarán sus datos particulares de regulación y actividades de sesión.',
+                                            'Cambiando el asistente al contexto de **$pName**. Ahora mis respuestas considerarán el perfil de aprendizaje registrado.',
                                         isUser: false,
                                         timestamp: DateTime.now(),
                                       ),
@@ -552,20 +526,20 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
       String ninoNombre, PacientePerfil? perfil, PlanData? plan) {
     final chips = [
       (
-        '📊 ¿Qué actividades tiene hoy?',
-        '¿Qué actividades tiene programadas $ninoNombre hoy?'
+        '📚 ¿Cómo organizar su estudio?',
+        '¿Cómo organizar el tiempo de estudio de $ninoNombre?'
       ),
       (
-        '🧘‍♂️ ¿Cómo puedo ayudarlo a regularse?',
-        '¿Cómo puedo ayudar a regularse a $ninoNombre?'
+        '🎯 ¿Cómo mejorar su concentración?',
+        '¿Cómo mejorar la concentración de $ninoNombre?'
       ),
       (
-        '📘 ¿Qué es el TEA y cómo influye?',
-        '¿Qué es el TEA y cuáles son sus características principales?'
+        '📘 ¿Qué es el TDAH y cómo influye?',
+        '¿Qué es el TDAH y cuáles son sus características principales?'
       ),
       (
-        '💡 Manejo de hipersensibilidad sensorial',
-        '¿Cómo manejar la hipersensibilidad sensorial y ruidos fuertes?'
+        '💡 ¿Qué suele distraerlo más?',
+        '¿Qué suele distraer más a $ninoNombre?'
       ),
     ];
 
@@ -633,7 +607,7 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
                 controller: _controller,
                 style: GoogleFonts.plusJakartaSans(color: _kText, fontSize: 15),
                 decoration: InputDecoration(
-                  hintText: 'Pregúntame sobre rutinas, actividades o TEA...',
+                    hintText: 'Pregúntame sobre estudio, concentración o TDAH...',
                   hintStyle: TextStyle(
                     color: _kSubtext.withValues(alpha: 0.5),
                     fontSize: 14,

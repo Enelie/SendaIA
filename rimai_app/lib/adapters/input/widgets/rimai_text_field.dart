@@ -68,7 +68,7 @@ class _RimAITextFieldState extends State<RimAITextField> {
             style: GoogleFonts.plusJakartaSans(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF63524E),
+              color: const Color.fromARGB(255, 79, 78, 99),
             ),
           ),
         ),
@@ -80,7 +80,7 @@ class _RimAITextFieldState extends State<RimAITextField> {
             boxShadow: _isFocused
                 ? [
                     BoxShadow(
-                      color: const Color(0xFFB8D6B2).withValues(alpha: 0.3),
+                      color: const Color(0xFFBAB0FF).withValues(alpha: 0.3),
                       blurRadius: 0,
                       spreadRadius: 4,
                     )
@@ -96,17 +96,17 @@ class _RimAITextFieldState extends State<RimAITextField> {
             onChanged: widget.onChanged,
             style: GoogleFonts.plusJakartaSans(
               fontSize: 15,
-              color: const Color(0xFF63524E),
+              color: const Color.fromARGB(255, 79, 78, 99),
             ),
             decoration: InputDecoration(
               hintText: widget.placeholder,
               hintStyle: GoogleFonts.plusJakartaSans(
                 fontSize: 15,
-                color: const Color(0xFF9E8A84).withValues(alpha: 0.7),
+                color: const Color.fromARGB(255, 132, 138, 158).withValues(alpha: 0.7),
               ),
               prefixIcon: Icon(
                 widget.prefixIcon,
-                color: const Color(0xFF9E8A84),
+                color: const Color.fromARGB(255, 132, 139, 158),
                 size: 20,
               ),
               suffixIcon: widget.showToggle
@@ -119,8 +119,8 @@ class _RimAITextFieldState extends State<RimAITextField> {
                       child: Icon(
                         _obscureText ? Icons.visibility_off : Icons.visibility,
                         color: !_obscureText
-                            ? const Color(0xFFB8D6B2)
-                            : const Color(0xFF9E8A84),
+                            ? const Color(0xFFBAB0FF)
+                            : const Color.fromARGB(255, 132, 132, 158),
                         size: 20,
                       ),
                     )
@@ -128,7 +128,7 @@ class _RimAITextFieldState extends State<RimAITextField> {
               filled: true,
               fillColor: _isFocused
                   ? const Color(0xFFFFFFFF)
-                  : const Color(0xFFE5DED5).withValues(alpha: 0.5),
+                  : const Color(0xFFC8E9F7).withValues(alpha: 0.5),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide.none,
@@ -140,7 +140,7 @@ class _RimAITextFieldState extends State<RimAITextField> {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: const BorderSide(
-                  color: Color(0xFFB8D6B2),
+                  color: Color(0xFFBAB0FF),
                   width: 1.5,
                 ),
               ),

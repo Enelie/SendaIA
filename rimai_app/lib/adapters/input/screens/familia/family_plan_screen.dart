@@ -44,7 +44,7 @@ class FamilyPlanScreen extends ConsumerWidget {
           error: (err, _) => BentoCard(
             backgroundColor: _kSurface,
             child: Text(
-              'Aun no hay un plan publicado para ejecutar: $err',
+              'Aún no hay una recomendación publicada para la familia.',
               style: const TextStyle(color: _kSubtext, height: 1.35),
             ),
           ),

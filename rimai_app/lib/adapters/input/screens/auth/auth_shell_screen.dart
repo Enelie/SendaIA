@@ -22,7 +22,7 @@ class AuthShellScreen extends StatelessWidget {
         location.contains('login') ? AuthTab.login : AuthTab.register;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF8),
+      backgroundColor: const Color(0xFFE9F8FF),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(

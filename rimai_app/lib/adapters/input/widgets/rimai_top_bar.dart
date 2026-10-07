@@ -13,7 +13,7 @@ class RimAITopBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.title,
     required this.leadingIcon,
-    this.iconColor = const Color(0xFF4A624D),
+    this.iconColor = const Color(0xFF4A52D9),
     this.trailingWidget,
     this.onLeadingPressed,
   });
@@ -48,10 +48,10 @@ class RimAITopBar extends StatelessWidget implements PreferredSizeWidget {
             right: 24,
           ),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF8F2).withValues(alpha: 0.7),
+            color: const Color(0xFFE9F8FF).withValues(alpha: 0.7),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF58423B).withValues(alpha: 0.08),
+                color: const Color.fromARGB(255, 64, 59, 88).withValues(alpha: 0.08),
                 blurRadius: 40,
                 offset: const Offset(0, 4),
               ),
@@ -85,7 +85,7 @@ class RimAITopBar extends StatelessWidget implements PreferredSizeWidget {
                   tooltip: 'Inicio',
                   icon: const Icon(
                     Icons.home_rounded,
-                    color: Color(0xFF58423B),
+                    color: Color.fromARGB(255, 60, 59, 88),
                   ),
                   onPressed: goHome,
                 ),

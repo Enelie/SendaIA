@@ -36,7 +36,7 @@ class RimAIBottomNav extends StatelessWidget {
           child: Container(
             height: 96,
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF8F2).withValues(alpha: 0.8),
+              color: const Color(0xFFE9F8FF).withValues(alpha: 0.8),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
@@ -70,7 +70,7 @@ class RimAIBottomNav extends StatelessWidget {
                         ),
                         decoration: BoxDecoration(
                           color: isActive
-                              ? const Color(0xFFB8D6B2)
+                              ? const Color(0xFFBAB0FF)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(100),
                         ),

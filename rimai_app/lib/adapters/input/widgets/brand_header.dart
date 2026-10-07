@@ -16,15 +16,15 @@ class RimAIBrandHeader extends StatelessWidget {
               const Icon(
                 Icons.all_inclusive,
                 size: 52,
-                color: Color(0xFFB8D6B2),
+                color: Color(0xFFBAB0FF),
               ),
               const SizedBox(width: 10),
               Text(
-                'RimAI',
+                'SendaIA',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 52,
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFFB8D6B2),
+                  color: const Color(0xFFBAB0FF),
                   letterSpacing: -1,
                 ),
               ),
@@ -32,11 +32,11 @@ class RimAIBrandHeader extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Bienvenido a tu mundo virtual',
+            'Acompaña. Aprende. Crece',
             style: GoogleFonts.plusJakartaSans(
               fontSize: 18,
               fontWeight: FontWeight.w500,
-              color: const Color(0xFF63524E),
+              color: const Color.fromARGB(255, 80, 78, 99),
             ),
           ),
         ],

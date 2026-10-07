@@ -18,8 +18,14 @@ class AuthRepositoryAdapter implements AuthRepositoryPort {
     ));
   }
 
+  Future<void> _prepare() async {
+    await ApiConstants.ensureBaseUrlResolved();
+    _dio.options.baseUrl = ApiConstants.baseUrl;
+  }
+
   @override
   Future<Usuario> registrarUsuario(RegistroUsuarioRequest request) async {
+    await _prepare();
     try {
       final response = await _dio.post(
         '/api/v1/auth/register',
@@ -50,6 +56,7 @@ class AuthRepositoryAdapter implements AuthRepositoryPort {
     required String correo,
     required String contrasena,
   }) async {
+    await _prepare();
     try {
       final response = await _dio.post(
         '/api/v1/auth/login',

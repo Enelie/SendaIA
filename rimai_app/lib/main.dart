@@ -15,9 +15,13 @@ import 'package:rimai_app/infrastructure/config/auth_storage_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Resuelve la URL del backend (emulador vs adb reverse) en paralelo con la BD
+  final baseUrlFuture = ApiConstants.ensureBaseUrlResolved();
+
   // Inicialización de SQLite (Offline-First PMV3)
   final localDb = SqliteDbRepository();
   await localDb.database; // Fuerza la creación/apertura de la BD
+  await baseUrlFuture;
 
   // Configuración de Sincronización en Background
   const authStorage = AuthStorageService(FlutterSecureStorage());
