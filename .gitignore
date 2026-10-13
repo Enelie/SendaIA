@@ -1,0 +1,41 @@
+﻿.env
+.env.*
+!.env.example
+!.env.sample
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+node_modules/
+dist/
+build/
+
+# Flutter y Dart
+.dart_tool/
+**/.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+
+# Android y Gradle
+**/.gradle/
+**/.kotlin/
+**/local.properties
+**/GeneratedPluginRegistrant.java
+
+# Archivos generados
+**/build/
+*.log
+
+# Entornos y dependencias de Python
+**/__pycache__/
+*.py[cod]
+**/.venv/
+**/venv/
+
+# Dependencias de Node.js
+**/node_modules/
+
+# Archivos internos de herramientas
+.kilo/

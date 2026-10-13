@@ -1,0 +1,123 @@
+import 'dart:ui';
+import 'package:flutter/material.dart';
+
+class BottomNavItem {
+  final IconData icon;
+  final String label;
+
+  BottomNavItem({required this.icon, required this.label});
+}
+
+class RimAIBottomNav extends StatelessWidget {
+  final int currentIndex;
+  final Function(int) onTap;
+  final List<BottomNavItem> items;
+
+  const RimAIBottomNav({
+    super.key,
+    required this.currentIndex,
+    required this.onTap,
+    required this.items,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0, left: 24, right: 24),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(48),
+          topRight: Radius.circular(48),
+          bottomLeft: Radius.circular(48),
+          bottomRight: Radius.circular(48),
+        ),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            height: 96,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE9F8FF).withValues(alpha: 0.8),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -4),
+                )
+              ],
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: items.asMap().entries.map((entry) {
+                final int idx = entry.key;
+                final BottomNavItem item = entry.value;
+                final bool isActive = idx == currentIndex;
+
+                return Expanded(
+                  child: Semantics(
+                    label: item.label,
+                    selected: isActive,
+                    button: true,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onTap(idx),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        curve: Curves.easeInOut,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isActive ? 12 : 4,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? const Color(0xFFBAB0FF)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              item.icon,
+                              color: isActive
+                                  ? const Color(0xFF1E1B16)
+                                  : const Color(0xFF58423B)
+                                      .withValues(alpha: 0.72),
+                            ),
+                            AnimatedSize(
+                              duration: const Duration(milliseconds: 180),
+                              curve: Curves.easeInOut,
+                              alignment: Alignment.topCenter,
+                              child: isActive
+                                  ? const SizedBox.shrink()
+                                  : Padding(
+                                      padding: const EdgeInsets.only(top: 4.0),
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        child: Text(
+                                          item.label,
+                                          maxLines: 1,
+                                          softWrap: false,
+                                          style: const TextStyle(
+                                            color: Color(0xFF58423B),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
