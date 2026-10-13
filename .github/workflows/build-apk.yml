@@ -1,0 +1,105 @@
+﻿name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: write
+
+jobs:
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run pytest
+        env:
+          PYTHONPATH: .
+          RIMAI_ALLOW_TEST_DEFAULTS: '1'
+          JWT_SECRET: test-ci-jwt-secret
+          DATABASE_URL: postgresql://rimai:rimai@localhost:5432/rimai_test
+        run: pytest tests/ -v --tb=short
+
+  flutter-tests:
+    name: Flutter tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        run: |
+          cd sendaia_app
+          flutter pub get
+      - name: Run flutter test
+        run: |
+          cd sendaia_app
+          flutter test
+
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    needs:
+      - backend-tests
+      - flutter-tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: |
+          cd sendaia_app
+          flutter pub get
+
+      - name: Build APK
+        run: |
+          cd sendaia_app
+          flutter build apk --release
+
+      - name: Upload APK as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sendaia-app-apk
+          path: sendaia_app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: sendaia_app/build/app/outputs/flutter-apk/app-release.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

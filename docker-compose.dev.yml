@@ -1,0 +1,2 @@
+# Perfil dev: pgAdmin. Los seeds demo ya se cargan en docker-compose.yml base.
+# Uso: docker compose --profile dev up
