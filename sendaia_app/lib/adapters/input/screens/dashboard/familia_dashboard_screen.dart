@@ -6,7 +6,7 @@ import 'package:rimai_app/core/providers/dashboard_providers.dart';
 import 'package:rimai_app/core/providers/auth_providers.dart';
 import 'package:rimai_app/adapters/input/widgets/rimai_bottom_nav.dart';
 
-// ── Design tokens ─────────────────────────────────────────────────────────────
+// â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _kP = Color(0xFF5CBF95);
 const _kA = Color(0xFFBAB0FF);
 const _kBg = Color(0xFFE9F8FF);
@@ -15,7 +15,7 @@ const _kText = Color(0xFF2A2825);
 const _kSub = Color(0xFF6B6661);
 const _kBdr = Color(0xFFC8E9F7);
 
-// ── Screen ────────────────────────────────────────────────────────────────────
+// â”€â”€ Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class FamiliaDashboardScreen extends ConsumerStatefulWidget {
   const FamiliaDashboardScreen({super.key});
   @override
@@ -37,22 +37,22 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
   DateTime? _date;
   String _nivelCognitivo = 'Bajo';
 
-  // Step 2 — Perfil de aprendizaje
+  // Step 2 â€” Perfil de aprendizaje
   String _atencion = 'Moderado';
   final Set<String> _formaAprende = {};
   final _actDificilesCtrl = TextEditingController();
   final List<String> _actDificiles = [];
   String _instrucciones = 'Sigue instrucciones simples';
 
-  // Step 3 — Entorno y aprendizaje
+  // Step 3 â€” Entorno y aprendizaje
   final Set<String> _distractores = {};
   final Set<String> _factores = {};
   String _lugarEstudio = 'Escritorio o mesa en casa';
   final _rutinaCtrl = TextEditingController();
   final List<String> _rutinas = [];
-  String _pausas = 'Sí, de forma ocasional';
+  String _pausas = 'SÃ­, de forma ocasional';
 
-  // Step 4 — Intereses y resumen
+  // Step 4 â€” Intereses y resumen
   final Set<String> _int = {};
   final _motivanCtrl = TextEditingController();
   final List<String> _motivan = [];
@@ -227,7 +227,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(editingId == null
-                ? 'Niño registrado correctamente.'
+                ? 'NiÃ±o registrado correctamente.'
                 : 'Registro actualizado correctamente.'),
             backgroundColor: const Color(0xFF4A52D9),
             duration: const Duration(seconds: 4),
@@ -266,7 +266,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     _lugarEstudio = 'Escritorio o mesa en casa';
     _rutinaCtrl.clear();
     _rutinas.clear();
-    _pausas = 'Sí, de forma ocasional';
+    _pausas = 'SÃ­, de forma ocasional';
     _int.clear();
     _motivanCtrl.clear();
     _motivan.clear();
@@ -390,7 +390,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     );
   }
 
-  // ── Build ──────────────────────────────────────────────────────────────────
+  // â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(familiaDashboardProvider);
@@ -416,11 +416,17 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   currentIndex: 0,
                   onTap: (index) {
                     if (index == 1) {
+                      context.go('/familia/sugerencias');
+                    }
+                    if (index == 2) {
                       context.go('/familia/chatbot');
                     }
                   },
                   items: [
                     BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
+                    BottomNavItem(
+                        icon: Icons.auto_awesome_outlined,
+                        label: 'Sugerencias'),
                     BottomNavItem(
                         icon: Icons.forum_rounded, label: 'Asistente IA'),
                   ],
@@ -445,9 +451,9 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ),
       ]));
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // STATUS VIEW
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Widget _buildStatus(DashboardData data) {
     return SafeArea(
         child: Column(children: [
@@ -470,14 +476,14 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                 )),
             const SizedBox(height: 6),
             Text(
-                '${data.totalPacientes} niño${data.totalPacientes != 1 ? 's' : ''} registrado${data.totalPacientes != 1 ? 's' : ''}',
+                '${data.totalPacientes} niÃ±o${data.totalPacientes != 1 ? 's' : ''} registrado${data.totalPacientes != 1 ? 's' : ''}',
                 style: GoogleFonts.plusJakartaSans(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF5A738E))),
             const SizedBox(height: 4),
             Text(
-                'Aquí podrás consultar recomendaciones y seguimiento del aprendizaje.',
+                'AquÃ­ podrÃ¡s consultar recomendaciones y seguimiento del aprendizaje.',
                 style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -518,7 +524,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                 child: OutlinedButton.icon(
                   icon:
                       const Icon(Icons.add, color: Color(0xFFB08C68), size: 20),
-                  label: const Text('Registrar otro niño'),
+                  label: const Text('Registrar otro niÃ±o'),
                   onPressed: () => setState(() {
                     _reset();
                     _wizardMode = true;
@@ -539,21 +545,21 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     ]));
   }
 
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   // WIZARD
-  // ══════════════════════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Widget _buildWizard(bool canGoBack) {
     const titles = [
-      'Datos básicos',
+      'Datos bÃ¡sicos',
       'Perfil de aprendizaje',
       'Entorno y aprendizaje',
       'Intereses y resumen'
     ];
     const subs = [
-      'Información general del niño.',
-      'Cómo aprende mejor y qué le resulta difícil.',
+      'InformaciÃ³n general del niÃ±o.',
+      'CÃ³mo aprende mejor y quÃ© le resulta difÃ­cil.',
       'Distractores, lugar y rutinas de estudio.',
-      'Intereses, motivación y resumen del perfil.',
+      'Intereses, motivaciÃ³n y resumen del perfil.',
     ];
     return SafeArea(
         child: Column(children: [
@@ -632,7 +638,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16))),
-              child: Text('Atrás',
+              child: Text('AtrÃ¡s',
                   style:
                       GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
             )),
@@ -683,7 +689,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
               onPressed: onBack),
           const SizedBox(width: 4),
         ],
-        // Logotipo SendaIA premium con doble círculo lila coherente y texto oscuro
+        // Logotipo SendaIA premium con doble cÃ­rculo lila coherente y texto oscuro
         SizedBox(
           width: 24,
           height: 14,
@@ -722,7 +728,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded,
                 color: _kA, size: 26),
-            tooltip: 'Registrar otro niño',
+            tooltip: 'Registrar otro niÃ±o',
             onPressed: () => setState(() {
               _reset();
               _wizardMode = true;
@@ -824,7 +830,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'No tienes notificaciones aún',
+                                  'No tienes notificaciones aÃºn',
                                   style: TextStyle(
                                     color: _kSub.withValues(alpha: 0.6),
                                     fontWeight: FontWeight.bold,
@@ -892,7 +898,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                                           IconButton(
                                             icon: const Icon(Icons.done,
                                                 size: 18, color: _kP),
-                                            tooltip: 'Marcar como leída',
+                                            tooltip: 'Marcar como leÃ­da',
                                             constraints: const BoxConstraints(),
                                             padding: EdgeInsets.zero,
                                             onPressed: () async {
@@ -945,7 +951,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     );
   }
 
-  // ── Page 1: Datos básicos ─────────────────────────────────────────────────
+  // â”€â”€ Page 1: Datos bÃ¡sicos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _page1() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -953,7 +959,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                _field('NOMBRE DEL NIÑO', 'Ej: Mateo García', _nameCtrl),
+                _field('NOMBRE DEL NIÃ‘O', 'Ej: Mateo GarcÃ­a', _nameCtrl),
                 const SizedBox(height: 16),
                 _label('FECHA DE NACIMIENTO'),
                 InkWell(
@@ -968,11 +974,11 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   )),
                 ),
                 const SizedBox(height: 16),
-                _field('DIAGNÓSTICO PREVIO DE TDAH (OPCIONAL)',
+                _field('DIAGNÃ“STICO PREVIO DE TDAH (OPCIONAL)',
                     'Ej: TDAH diagnosticado por especialista', _diagCtrl),
                 const SizedBox(height: 8),
                 Text(
-                  'Registro opcional del diagnóstico ya realizado por un profesional. Aquí no se hace ningún diagnóstico automático.',
+                  'Registro opcional del diagnÃ³stico ya realizado por un profesional. AquÃ­ no se hace ningÃºn diagnÃ³stico automÃ¡tico.',
                   style: GoogleFonts.plusJakartaSans(
                       fontSize: 11, color: _kSub, height: 1.4),
                 ),
@@ -980,7 +986,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ]),
       );
 
-  // ── Page 2: Perfil de aprendizaje ─────────────────────────────────────────
+  // â”€â”€ Page 2: Perfil de aprendizaje â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _page2() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -989,7 +995,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 _choice(
-                    'NIVEL DE ATENCIÓN / CONCENTRACIÓN',
+                    'NIVEL DE ATENCIÃ“N / CONCENTRACIÃ“N',
                     ['Bajo', 'Moderado', 'Alto'],
                     _atencion,
                     (v) => setState(() => _atencion = v)),
@@ -997,17 +1003,17 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                 _multi(
                     'FORMA EN QUE APRENDE MEJOR',
                     [
-                      'Visual (imágenes, demos, esquemas)',
+                      'Visual (imÃ¡genes, demos, esquemas)',
                       'Auditivo (explicaciones y lectura en voz alta)',
-                      'Práctico (manipular y experimentar)',
+                      'PrÃ¡ctico (manipular y experimentar)',
                       'Lectura y escritura',
                       'Con apoyo de otra persona'
                     ],
                     _formaAprende),
                 const SizedBox(height: 20),
                 _editableRows(
-                  label: 'ACTIVIDADES QUE LE RESULTAN DIFÍCILES',
-                  hint: 'Ej: escribir textos, problemas de lectura, matemáticas',
+                  label: 'ACTIVIDADES QUE LE RESULTAN DIFÃCILES',
+                  hint: 'Ej: escribir textos, problemas de lectura, matemÃ¡ticas',
                   controller: _actDificilesCtrl,
                   rows: _actDificiles,
                   onAdd: () => _addRow(_actDificiles, _actDificilesCtrl),
@@ -1028,7 +1034,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ]),
       );
 
-  // ── Page 3: Entorno y aprendizaje ─────────────────────────────────────────
+  // â”€â”€ Page 3: Entorno y aprendizaje â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _page3() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -1040,22 +1046,22 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                     'PRINCIPALES DISTRACTORES',
                     [
                       'Ruidos',
-                      'Pantallas o televisión',
+                      'Pantallas o televisiÃ³n',
                       'Movimiento de otras personas',
                       'Conversaciones alrededor',
-                      'Teléfono o tablet',
+                      'TelÃ©fono o tablet',
                       'Temperatura o luces'
                     ],
                     _distractores),
                 const SizedBox(height: 20),
                 _multi(
-                    'FACTORES QUE DIFICULTAN SU CONCENTRACIÓN',
+                    'FACTORES QUE DIFICULTAN SU CONCENTRACIÃ“N',
                     [
-                      'Poco sueño',
+                      'Poco sueÃ±o',
                       'Cansancio',
                       'Hambre',
                       'Ansiedad o preocupaciones',
-                      'Demasiados estímulos',
+                      'Demasiados estÃ­mulos',
                       'Falta de rutina'
                     ],
                     _factores),
@@ -1064,7 +1070,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                     'LUGAR HABITUAL DE ESTUDIO',
                     [
                       'Escritorio o mesa en casa',
-                      'Su habitación',
+                      'Su habitaciÃ³n',
                       'Comedor o sala',
                       'Biblioteca',
                       'Otro lugar'
@@ -1084,8 +1090,8 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                 _choice(
                     'NECESIDAD DE PAUSAS DURANTE LAS ACTIVIDADES',
                     [
-                      'Sí, con frecuencia',
-                      'Sí, de forma ocasional',
+                      'SÃ­, con frecuencia',
+                      'SÃ­, de forma ocasional',
                       'No necesita pausas'
                     ],
                     _pausas,
@@ -1094,7 +1100,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ]),
       );
 
-  // ── Page 4: Intereses y resumen ───────────────────────────────────────────
+  // â”€â”€ Page 4: Intereses y resumen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _page4() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -1108,16 +1114,16 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                       'Dinosaurios',
                       'Trenes',
                       'Espacio',
-                      'Geometría',
-                      'Números',
-                      'Música',
+                      'GeometrÃ­a',
+                      'NÃºmeros',
+                      'MÃºsica',
                       'Animales'
                     ],
                     _int),
                 const SizedBox(height: 24),
                 _editableRows(
                   label: 'ACTIVIDADES QUE LO MOTIVAN',
-                  hint: 'Ej: juegos de mesa, pintar, deporte, música',
+                  hint: 'Ej: juegos de mesa, pintar, deporte, mÃºsica',
                   controller: _motivanCtrl,
                   rows: _motivan,
                   onAdd: () => _addRow(_motivan, _motivanCtrl),
@@ -1148,19 +1154,19 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                       _summaryRow(
                           'Nombre:',
                           _nameCtrl.text.trim().isEmpty
-                              ? '—'
+                              ? 'â€”'
                               : _nameCtrl.text.trim()),
                       const Divider(color: Color(0xFFC8E9F7), height: 16),
                       _summaryRow('Fecha nac.:',
-                          _dateCtrl.text.isEmpty ? '—' : _dateCtrl.text),
+                          _dateCtrl.text.isEmpty ? 'â€”' : _dateCtrl.text),
                       const Divider(color: Color(0xFFC8E9F7), height: 16),
                       _summaryRow(
-                          'Diagnóstico:',
+                          'DiagnÃ³stico:',
                           _diagCtrl.text.trim().isEmpty
                               ? 'No especificado'
                               : _diagCtrl.text.trim()),
                       const Divider(color: Color(0xFFC8E9F7), height: 16),
-                      _summaryRow('Atención:', _atencion),
+                      _summaryRow('AtenciÃ³n:', _atencion),
                       const Divider(color: Color(0xFFC8E9F7), height: 16),
                       _summaryRow(
                           'Aprende mejor con:',
@@ -1194,7 +1200,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                                 child: Text(
-                              'Al registrar, el perfil de aprendizaje quedará guardado para generar recomendaciones personalizadas para ti.',
+                              'Al registrar, el perfil de aprendizaje quedarÃ¡ guardado para generar recomendaciones personalizadas para ti.',
                               style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
                                   color: const Color(0xFF2E34A8),
@@ -1244,7 +1250,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ]),
       );
 
-  // ── Widget helpers ────────────────────────────────────────────────────────
+  // â”€â”€ Widget helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   Widget _card({required Widget child, Color? backgroundColor}) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
@@ -1483,7 +1489,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       );
 }
 
-// ── Status badge definition ──────────────────────────────────────────────────
+// â”€â”€ Status badge definition â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class _StatusBadgeInfo {
   final IconData icon;
   final String label;
@@ -1540,7 +1546,7 @@ _StatusBadgeInfo _getStatusBadgeInfo(String estado) {
   };
 }
 
-// ── Patient status card ───────────────────────────────────────────────────────
+// â”€â”€ Patient status card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 String _percent(double value) => '${(value * 100).clamp(0, 100).round()}%';
 
 class _FamilyMetricPill extends StatelessWidget {
@@ -1697,7 +1703,7 @@ class _PatientCard extends ConsumerWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: _kText)),
-                Text('${p.edad} años · ${p.nivelCognitivo}',
+                Text('${p.edad} aÃ±os Â· ${p.nivelCognitivo}',
                     style: GoogleFonts.plusJakartaSans(
                         fontSize: 12, color: _kSub)),
               ])),
@@ -1925,32 +1931,54 @@ class _PatientCard extends ConsumerWidget {
           ),
         ] else ...[
           const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _kBdr.withValues(alpha: 0.7)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.lightbulb_outline,
-                    size: 16, color: Color(0xFFB08C68)),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    'Próximamente podrás recibir recomendaciones personalizadas para apoyar el aprendizaje de tu hijo.',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      height: 1.35,
-                      color: _kSub,
-                      fontWeight: FontWeight.w600,
+          InkWell(
+            onTap: () =>
+                context.go('/familia/sugerencias?ninoId=${p.id}'),
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _kBdr.withValues(alpha: 0.7)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.auto_awesome_outlined,
+                      size: 16, color: Color(0xFF7B6CF6)),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Sugerencias de actividades',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            color: _kText,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          'Descubre con IA las actividades recomendadas '
+                          'para ${p.nombre} y por quÃ© conviene hacerlas en casa.',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 11.5,
+                            height: 1.35,
+                            color: _kSub,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ],
+                  const Icon(Icons.chevron_right_rounded,
+                      size: 20, color: Color(0xFF9CA3AF)),
+                ],
+              ),
             ),
           ),
         ],
@@ -1958,3 +1986,4 @@ class _PatientCard extends ConsumerWidget {
     );
   }
 }
+

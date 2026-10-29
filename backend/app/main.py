@@ -15,6 +15,9 @@ from app.adapters.inbound.api.plan_controller import router as plan_router
 from app.adapters.inbound.api.seguimiento_controller import router as seguimiento_router
 from app.adapters.inbound.api.reportes_controller import router as reportes_router
 from app.adapters.inbound.api.dashboard_controller import router as dashboard_router
+from app.adapters.inbound.api.familia_sugerencias_controller import (
+    router as familia_sugerencias_router,
+)
 from app.adapters.inbound.api.exception_handlers import (
     http_exception_handler,
     psycopg2_exception_handler,
@@ -69,6 +72,7 @@ app.include_router(seguimiento_router)
 app.include_router(reportes_router)
 app.include_router(ai_router)
 app.include_router(admin_router)
+app.include_router(familia_sugerencias_router)
 
 
 @app.get("/")

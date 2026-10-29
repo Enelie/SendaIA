@@ -372,14 +372,19 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
         },
       ),
       bottomNavigationBar: RimAIBottomNav(
-        currentIndex: 1, // Chatbot IA
+        currentIndex: 2, // Asistente IA
         onTap: (index) {
           if (index == 0) {
             context.go('/familia/dashboard');
           }
+          if (index == 1) {
+            context.go('/familia/sugerencias');
+          }
         },
         items: [
           BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
+          BottomNavItem(
+              icon: Icons.auto_awesome_outlined, label: 'Sugerencias'),
           BottomNavItem(icon: Icons.forum_rounded, label: 'Asistente IA'),
         ],
       ),

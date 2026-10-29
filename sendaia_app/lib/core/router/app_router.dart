@@ -27,6 +27,7 @@ import 'package:rimai_app/adapters/input/screens/familia/family_activity_session
 import 'package:rimai_app/adapters/input/screens/familia/family_plan_screen.dart';
 import 'package:rimai_app/adapters/input/screens/familia/ejecucion_actividad_screen.dart';
 import 'package:rimai_app/adapters/input/screens/familia/family_chatbot_screen.dart';
+import 'package:rimai_app/adapters/input/screens/familia/sugerencias_actividades_screen.dart';
 import 'package:rimai_app/adapters/input/screens/documents/clinical_document_viewer_screen.dart';
 import 'package:rimai_app/core/utils/clinical_document_utils.dart';
 import 'package:rimai_app/application/usecases/registrar_actividad_usecase.dart';
@@ -351,6 +352,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/familia/chatbot',
         builder: (context, state) => const FamilyChatbotScreen(),
+      ),
+      GoRoute(
+        path: '/familia/sugerencias',
+        builder: (context, state) => SugerenciasActividadesScreen(
+          ninoId: state.uri.queryParameters['ninoId'],
+        ),
       ),
       GoRoute(
         path: '/padre/scq/resultados',
