@@ -372,17 +372,25 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
         },
       ),
       bottomNavigationBar: RimAIBottomNav(
-        currentIndex: 2, // Asistente IA
+        currentIndex: 4,
         onTap: (index) {
           if (index == 0) {
             context.go('/familia/dashboard');
           }
           if (index == 1) {
+            context.go('/familia/perfil');
+          }
+          if (index == 2) {
+            context.go('/familia/seguimiento');
+          }
+          if (index == 3) {
             context.go('/familia/sugerencias');
           }
         },
         items: [
           BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
+          BottomNavItem(icon: Icons.school_rounded, label: 'Perfil'),
+          BottomNavItem(icon: Icons.insights_rounded, label: 'Seguimiento'),
           BottomNavItem(
               icon: Icons.auto_awesome_outlined, label: 'Sugerencias'),
           BottomNavItem(icon: Icons.forum_rounded, label: 'Asistente IA'),

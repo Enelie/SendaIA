@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +20,7 @@ from app.adapters.inbound.api.dashboard_controller import router as dashboard_ro
 from app.adapters.inbound.api.familia_sugerencias_controller import (
     router as familia_sugerencias_router,
 )
+from app.adapters.inbound.api.familia_seguimiento_controller import router as familia_seguimiento_router
 from app.adapters.inbound.api.exception_handlers import (
     http_exception_handler,
     psycopg2_exception_handler,
@@ -38,9 +41,12 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
+_cors_origin_regex = (os.getenv("CORS_ORIGIN_REGEX") or "").strip() or None
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
+    allow_origin_regex=_cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -65,6 +71,7 @@ def on_shutdown():
 
 app.include_router(auth_router)
 app.include_router(dashboard_router)
+app.include_router(familia_seguimiento_router)
 app.include_router(patient_router)
 app.include_router(scq_router)
 app.include_router(plan_router)
