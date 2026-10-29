@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -18,27 +19,30 @@ void main() async {
   // Resuelve la URL del backend (emulador vs adb reverse) en paralelo con la BD
   final baseUrlFuture = ApiConstants.ensureBaseUrlResolved();
 
-  // Inicialización de SQLite (Offline-First PMV3)
-  final localDb = SqliteDbRepository();
-  await localDb.database; // Fuerza la creación/apertura de la BD
-  await baseUrlFuture;
+  // SQLite no está disponible en Chrome; en web solo se resuelve la API.
+  if (!kIsWeb) {
+    final localDb = SqliteDbRepository();
+    await localDb.database;
+    await baseUrlFuture;
 
-  // Configuración de Sincronización en Background
-  const authStorage = AuthStorageService(FlutterSecureStorage());
-  final apiSyncRepo = ApiSyncRepository(
-    baseUrl: ApiConstants.baseUrl,
-    tokenProvider: authStorage.getToken,
-  );
-  final syncUsecase = SyncOfflineUsecase(localDb, apiSyncRepo);
+    const authStorage = AuthStorageService(FlutterSecureStorage());
+    final apiSyncRepo = ApiSyncRepository(
+      baseUrl: ApiConstants.baseUrl,
+      tokenProvider: authStorage.getToken,
+    );
+    final syncUsecase = SyncOfflineUsecase(localDb, apiSyncRepo);
 
-  syncUsecase.execute(); // Intento inicial al abrir la app
-  Connectivity().onConnectivityChanged.listen((results) {
-    final hasConnection =
-        results.any((result) => result != ConnectivityResult.none);
-    if (hasConnection) {
-      syncUsecase.execute();
-    }
-  });
+    syncUsecase.execute();
+    Connectivity().onConnectivityChanged.listen((results) {
+      final hasConnection =
+          results.any((result) => result != ConnectivityResult.none);
+      if (hasConnection) {
+        syncUsecase.execute();
+      }
+    });
+  } else {
+    await baseUrlFuture;
+  }
 
   runApp(
     const ProviderScope(

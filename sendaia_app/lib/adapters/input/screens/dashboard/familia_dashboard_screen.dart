@@ -416,11 +416,20 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   currentIndex: 0,
                   onTap: (index) {
                     if (index == 1) {
+                      context.go('/familia/perfil');
+                    }
+                    if (index == 2) {
+                      context.go('/familia/seguimiento');
+                    }
+                    if (index == 3) {
                       context.go('/familia/chatbot');
                     }
                   },
                   items: [
                     BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
+                    BottomNavItem(icon: Icons.school_rounded, label: 'Perfil'),
+                    BottomNavItem(
+                        icon: Icons.insights_rounded, label: 'Seguimiento'),
                     BottomNavItem(
                         icon: Icons.forum_rounded, label: 'Asistente IA'),
                   ],

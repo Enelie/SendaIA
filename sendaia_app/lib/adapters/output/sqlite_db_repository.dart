@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -6,6 +7,9 @@ import '../../domain/entities/actividad_local.dart';
 
 class SqliteDbRepository implements ILocalDbPort {
   static Database? _database;
+
+  // sqflite no está disponible en web: cola en memoria como respaldo.
+  static final Map<String, ActividadLocal> _webPendientes = {};
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -71,6 +75,10 @@ class SqliteDbRepository implements ILocalDbPort {
 
   @override
   Future<void> saveActividad(ActividadLocal actividad) async {
+    if (kIsWeb) {
+      _webPendientes[actividad.id] = actividad;
+      return;
+    }
     final db = await database;
 
     await db.insert(
@@ -82,6 +90,10 @@ class SqliteDbRepository implements ILocalDbPort {
 
   @override
   Future<List<ActividadLocal>> getActividadesPendientes() async {
+    if (kIsWeb) {
+      return _webPendientes.values.toList()
+        ..sort((a, b) => a.timestampLocal.compareTo(b.timestampLocal));
+    }
     final db = await database;
     final maps = await db.query(
       'sesiones_pendientes_sync',
@@ -94,6 +106,10 @@ class SqliteDbRepository implements ILocalDbPort {
   @override
   Future<void> deleteActividades(List<String> ids) async {
     if (ids.isEmpty) return;
+    if (kIsWeb) {
+      ids.forEach(_webPendientes.remove);
+      return;
+    }
     final db = await database;
     await db.transaction((txn) async {
       for (final id in ids) {

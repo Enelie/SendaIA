@@ -42,6 +42,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET es obligatorio — defínalo en .env}
       CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS es obligatorio — defínalo en .env}
+      CORS_ORIGIN_REGEX: ${CORS_ORIGIN_REGEX:-}
       EVALUAR_ALERTAS_EN_RESUMEN: ${EVALUAR_ALERTAS_EN_RESUMEN:-false}
       ALLOW_PUBLIC_REGISTER: ${ALLOW_PUBLIC_REGISTER:-true}
     ports:
