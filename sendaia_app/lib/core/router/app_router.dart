@@ -348,11 +348,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/familia/dashboard',
-        builder: (context, state) => const FamiliaDashboardScreen(),
+        builder: (context, state) => FamiliaDashboardScreen(
+          initialNinoId: state.uri.queryParameters['nino'],
+        ),
       ),
       GoRoute(
         path: '/familia/chatbot',
-        builder: (context, state) => const FamilyChatbotScreen(),
+        builder: (context, state) => FamilyChatbotScreen(
+          initialNinoId: state.uri.queryParameters['nino'],
+        ),
       ),
       GoRoute(
         path: '/familia/perfil',
