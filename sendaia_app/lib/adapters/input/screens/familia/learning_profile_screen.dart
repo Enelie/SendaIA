@@ -387,6 +387,9 @@ class _LearningProfileScreenState extends ConsumerState<LearningProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(familiaDashboardProvider);
+    final childQuery = _selectedId == null
+        ? ''
+        : '?nino=${Uri.encodeQueryComponent(_selectedId!)}';
     return Scaffold(
       backgroundColor: _kBg,
       appBar: AppBar(
@@ -410,7 +413,7 @@ class _LearningProfileScreenState extends ConsumerState<LearningProfileScreen> {
             tooltip: 'Inicio',
             icon: const Icon(Icons.home_rounded,
                 color: Color.fromARGB(255, 60, 59, 88)),
-            onPressed: () => context.go('/familia/dashboard'),
+            onPressed: () => context.go('/familia/dashboard$childQuery'),
           ),
           const SizedBox(width: 8),
         ],
@@ -455,9 +458,15 @@ class _LearningProfileScreenState extends ConsumerState<LearningProfileScreen> {
           : RimAIBottomNav(
               currentIndex: 1,
               onTap: (index) {
-                if (index == 0) context.go('/familia/dashboard');
-                if (index == 2) context.go('/familia/seguimiento');
-                if (index == 3) context.go('/familia/chatbot');
+                if (index == 0) {
+                  context.go('/familia/dashboard$childQuery');
+                }
+                if (index == 2) {
+                  context.go('/familia/seguimiento$childQuery');
+                }
+                if (index == 3) {
+                  context.go('/familia/chatbot$childQuery');
+                }
               },
               items: [
                 BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),

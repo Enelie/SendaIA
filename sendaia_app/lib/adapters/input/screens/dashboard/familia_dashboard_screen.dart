@@ -4,9 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rimai_app/core/providers/dashboard_providers.dart';
 import 'package:rimai_app/core/providers/auth_providers.dart';
+import 'package:rimai_app/core/providers/seguimiento_providers.dart';
 import 'package:rimai_app/adapters/input/widgets/rimai_bottom_nav.dart';
 
-// â”€â”€ Design tokens â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Design tokens ─────────────────────────────────────────────────────────────
 const _kP = Color(0xFF5CBF95);
 const _kA = Color(0xFFBAB0FF);
 const _kBg = Color(0xFFE9F8FF);
@@ -15,14 +16,18 @@ const _kText = Color(0xFF2A2825);
 const _kSub = Color(0xFF6B6661);
 const _kBdr = Color(0xFFC8E9F7);
 
-// â”€â”€ Screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Screen ────────────────────────────────────────────────────────────────────
 class FamiliaDashboardScreen extends ConsumerStatefulWidget {
-  const FamiliaDashboardScreen({super.key});
+  const FamiliaDashboardScreen({super.key, this.initialNinoId});
+  final String? initialNinoId;
+
   @override
   ConsumerState<FamiliaDashboardScreen> createState() => _State();
 }
 
 class _State extends ConsumerState<FamiliaDashboardScreen> {
+  String? _selectedHomeNinoId;
+
   // Wizard control
   bool _wizardMode = false;
   int _step = 0;
@@ -37,28 +42,34 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
   DateTime? _date;
   String _nivelCognitivo = 'Bajo';
 
-  // Step 2 â€” Perfil de aprendizaje
+  // Step 2 — Perfil de aprendizaje
   String _atencion = 'Moderado';
   final Set<String> _formaAprende = {};
   final _actDificilesCtrl = TextEditingController();
   final List<String> _actDificiles = [];
   String _instrucciones = 'Sigue instrucciones simples';
 
-  // Step 3 â€” Entorno y aprendizaje
+  // Step 3 — Entorno y aprendizaje
   final Set<String> _distractores = {};
   final Set<String> _factores = {};
   String _lugarEstudio = 'Escritorio o mesa en casa';
   final _rutinaCtrl = TextEditingController();
   final List<String> _rutinas = [];
-  String _pausas = 'SÃ­, de forma ocasional';
+  String _pausas = 'Sí, de forma ocasional';
 
-  // Step 4 â€” Intereses y resumen
+  // Step 4 — Intereses y resumen
   final Set<String> _int = {};
   final _motivanCtrl = TextEditingController();
   final List<String> _motivan = [];
   final _estrategiasCtrl = TextEditingController();
   final List<String> _estrategias = [];
   bool _acceptedPrivacyConsent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedHomeNinoId = widget.initialNinoId;
+  }
 
   @override
   void dispose() {
@@ -217,6 +228,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       setState(() {
         _wizardMode = false;
         _step = 0;
+        if (ninoId.isNotEmpty) _selectedHomeNinoId = ninoId;
         _reset();
       });
       if (mounted) {
@@ -227,7 +239,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(editingId == null
-                ? 'NiÃ±o registrado correctamente.'
+                ? 'Niño registrado correctamente.'
                 : 'Registro actualizado correctamente.'),
             backgroundColor: const Color(0xFF4A52D9),
             duration: const Duration(seconds: 4),
@@ -266,7 +278,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     _lugarEstudio = 'Escritorio o mesa en casa';
     _rutinaCtrl.clear();
     _rutinas.clear();
-    _pausas = 'SÃ­, de forma ocasional';
+    _pausas = 'Sí, de forma ocasional';
     _int.clear();
     _motivanCtrl.clear();
     _motivan.clear();
@@ -390,7 +402,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     );
   }
 
-  // â”€â”€ Build â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Build ──────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(familiaDashboardProvider);
@@ -405,41 +417,45 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       ),
       data: (data) {
         final showWizard = _wizardMode || data.pacientes.isEmpty;
+        if (showWizard) {
+          return Scaffold(
+            backgroundColor: _kBg,
+            body: _buildWizard(data.pacientes.isNotEmpty),
+          );
+        }
+        final selectedNino = data.pacientes.firstWhere(
+          (paciente) => paciente.id == _selectedHomeNinoId,
+          orElse: () => data.pacientes.first,
+        );
         return Scaffold(
           backgroundColor: _kBg,
-          body: showWizard
-              ? _buildWizard(data.pacientes.isNotEmpty)
-              : _buildStatus(data),
-          bottomNavigationBar: showWizard
-              ? null
-              : RimAIBottomNav(
-                  currentIndex: 0,
-                  onTap: (index) {
-                    if (index == 1) {
-                      context.go('/familia/perfil');
-                    }
-                    if (index == 2) {
-                      context.go('/familia/seguimiento');
-                    }
-                    if (index == 3) {
-                      context.go('/familia/sugerencias');
-                    }
-                    if (index == 4) {
-                      context.go('/familia/chatbot');
-                    }
-                  },
-                  items: [
-                    BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
-                    BottomNavItem(icon: Icons.school_rounded, label: 'Perfil'),
-                    BottomNavItem(
-                        icon: Icons.insights_rounded, label: 'Seguimiento'),
-                    BottomNavItem(
-                        icon: Icons.auto_awesome_outlined,
-                        label: 'Sugerencias'),
-                    BottomNavItem(
-                        icon: Icons.forum_rounded, label: 'Asistente IA'),
-                  ],
-                ),
+          body: _buildStatus(data.pacientes, selectedNino),
+          bottomNavigationBar: RimAIBottomNav(
+            currentIndex: 0,
+            onTap: (index) {
+              if (index == 1) {
+                context.go('/familia/perfil?nino=${selectedNino.id}');
+              }
+              if (index == 2) {
+                context.go('/familia/seguimiento?nino=${selectedNino.id}');
+              }
+              if (index == 3) {
+                context
+                    .go('/familia/sugerencias?ninoId=${selectedNino.id}');
+              }
+              if (index == 4) {
+                context.go('/familia/chatbot?nino=${selectedNino.id}');
+              }
+            },
+            items: [
+              BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
+              BottomNavItem(icon: Icons.school_rounded, label: 'Perfil'),
+              BottomNavItem(icon: Icons.insights_rounded, label: 'Seguimiento'),
+              BottomNavItem(
+                  icon: Icons.auto_awesome_outlined, label: 'Sugerencias'),
+              BottomNavItem(icon: Icons.forum_rounded, label: 'Asistente IA'),
+            ],
+          ),
         );
       },
     );
@@ -460,10 +476,13 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ),
       ]));
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ══════════════════════════════════════════════════════════════════════════
   // STATUS VIEW
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  Widget _buildStatus(DashboardData data) {
+  // ══════════════════════════════════════════════════════════════════════════
+  Widget _buildStatus(
+    List<PacienteDashboard> pacientes,
+    PacienteDashboard nino,
+  ) {
     return SafeArea(
         child: Column(children: [
       _topBar(showAdd: true),
@@ -476,64 +495,76 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('Seguimiento\nfamiliar',
+            if (pacientes.length > 1) ...[
+              _buildChildSelector(pacientes, nino),
+              const SizedBox(height: 20),
+            ],
+            Text('Inicio',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
                   color: _kText,
                   height: 1.2,
                 )),
-            const SizedBox(height: 6),
-            Text(
-                '${data.totalPacientes} niÃ±o${data.totalPacientes != 1 ? 's' : ''} registrado${data.totalPacientes != 1 ? 's' : ''}',
-                style: GoogleFonts.plusJakartaSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: const Color(0xFF5A738E))),
-            const SizedBox(height: 4),
-            Text(
-                'AquÃ­ podrÃ¡s consultar recomendaciones y seguimiento del aprendizaje.',
-                style: GoogleFonts.plusJakartaSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: _kSub)),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _FamilyMetricPill(
-                    icon: Icons.event_available_outlined,
-                    label: 'Esta semana',
-                    value: '${data.sesionesEstaSemana}',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _FamilyMetricPill(
-                    icon: Icons.notification_important_outlined,
-                    label: 'Alertas',
-                    value: '${data.alertasBajaAdherencia}',
-                    accent: data.alertasBajaAdherencia > 0 ? _kP : _kA,
-                  ),
-                ),
-              ],
+            _buildProfileSummary(nino),
+            const SizedBox(height: 24),
+            Text(
+              'ACCESOS RÁPIDOS',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: _kSub,
+              ),
+            ),
+            const SizedBox(height: 12),
+            _FamilyQuickAccessCard(
+              icon: Icons.school_rounded,
+              title: 'Perfil de aprendizaje',
+              subtitle: 'Consulta y actualiza su perfil',
+              accent: _kP,
+              onTap: () => context.go('/familia/perfil?nino=${nino.id}'),
+            ),
+            const SizedBox(height: 10),
+            _FamilyQuickAccessCard(
+              icon: Icons.lightbulb_outline_rounded,
+              title: 'Sugerencias de actividades',
+              subtitle: 'Revisa las actividades de su plan',
+              accent: const Color(0xFFE0A642),
+              onTap: () => context.go('/familia/plan/${nino.id}'),
+            ),
+            const SizedBox(height: 10),
+            _FamilyQuickAccessCard(
+              icon: Icons.insights_rounded,
+              title: 'Seguimiento familiar',
+              subtitle: 'Consulta sus avances y actividades',
+              accent: _kA,
+              onTap: () =>
+                  context.go('/familia/seguimiento?nino=${nino.id}'),
+            ),
+            const SizedBox(height: 10),
+            _FamilyQuickAccessCard(
+              icon: Icons.forum_rounded,
+              title: 'Asistente para padres',
+              subtitle: 'Encuentra orientación para acompañarle',
+              accent: const Color(0xFF77B8D7),
+              onTap: () => context.go('/familia/chatbot?nino=${nino.id}'),
             ),
             const SizedBox(height: 24),
-            ...data.pacientes.map((p) => Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: _PatientCard(
-                    p: p,
-                    onEdit: () => _editarPaciente(p),
-                    onDelete: () => _confirmarEliminar(p),
-                  ),
-                )),
+            _RecentFamilyActivity(ninoId: nino.id),
+            if (nino.requiereScq &&
+                (!nino.scqCompletado || !nino.scqAutorizadoEnvio)) ...[
+              const SizedBox(height: 16),
+              _buildScqAction(nino),
+            ],
             const SizedBox(height: 16),
             SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
                   icon:
                       const Icon(Icons.add, color: Color(0xFFB08C68), size: 20),
-                  label: const Text('Registrar otro niÃ±o'),
+                  label: const Text('Registrar otro niño'),
                   onPressed: () => setState(() {
                     _reset();
                     _wizardMode = true;
@@ -554,21 +585,217 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     ]));
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  Widget _buildChildSelector(
+    List<PacienteDashboard> pacientes,
+    PacienteDashboard selected,
+  ) {
+    return DropdownButtonFormField<String>(
+      initialValue: selected.id,
+      decoration: InputDecoration(
+        labelText: 'Niño seleccionado',
+        prefixIcon: const Icon(Icons.child_care_rounded, color: _kP),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _kBdr),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: _kBdr),
+        ),
+      ),
+      items: pacientes
+          .map((paciente) => DropdownMenuItem(
+                value: paciente.id,
+                child: Text(paciente.nombre),
+              ))
+          .toList(),
+      onChanged: (id) {
+        if (id != null) setState(() => _selectedHomeNinoId = id);
+      },
+    );
+  }
+
+  Widget _buildProfileSummary(PacienteDashboard nino) {
+    final formas = nino.hitos['forma_aprende'] is List
+        ? (nino.hitos['forma_aprende'] as List)
+            .map((item) => item.toString())
+            .toList()
+        : <String>[];
+    final intereses = nino.intereses;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _kBdr.withValues(alpha: 0.8)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: _kA.withValues(alpha: 0.4),
+                child: Text(
+                  (nino.nombre.isNotEmpty ? nino.nombre[0] : '?').toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    color: _kText,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      nino.nombre,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: _kText,
+                      ),
+                    ),
+                    Text(
+                      '${nino.edad} años',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _kSub,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                tooltip: 'Editar perfil',
+                onPressed: () => _editarPaciente(nino),
+                icon: const Icon(Icons.edit_outlined, color: _kSub),
+              ),
+              IconButton(
+                tooltip: 'Eliminar registro',
+                onPressed: () => _confirmarEliminar(nino),
+                icon: const Icon(Icons.delete_outline, color: _kSub),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Resumen de su perfil',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: _kText,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _ProfileSummaryLine(
+            label: 'Nivel de aprendizaje',
+            value: nino.nivelCognitivo.isEmpty
+                ? 'Sin registrar'
+                : nino.nivelCognitivo,
+          ),
+          if (nino.diagnostico?.trim().isNotEmpty == true)
+            _ProfileSummaryLine(
+              label: 'Diagnóstico registrado',
+              value: nino.diagnostico!,
+            ),
+          if (formas.isNotEmpty)
+            _ProfileSummaryLine(
+              label: 'Forma de aprender',
+              value: formas.join(', '),
+            ),
+          if (intereses.isNotEmpty)
+            _ProfileSummaryLine(
+              label: 'Intereses',
+              value: intereses.join(', '),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScqAction(PacienteDashboard nino) {
+    final puedeEnviar = nino.scqCompletado && !nino.scqAutorizadoEnvio;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _kBdr),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.quiz_outlined, color: _kP),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              puedeEnviar
+                  ? 'El cuestionario está listo para enviar al terapeuta.'
+                  : 'Completa el cuestionario SCQ sugerido para este registro.',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _kText,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              if (puedeEnviar) {
+                ref
+                    .read(dashboardServiceProvider)
+                    .enviarCasoScqATerapeuta(nino.id)
+                    .then((_) {
+                  ref.invalidate(familiaDashboardProvider);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Solicitud enviada al terapeuta.')),
+                    );
+                  }
+                }).catchError((Object error) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('$error')),
+                    );
+                  }
+                });
+              } else {
+                context.push(
+                  '/padre/scq/${nino.id}?nombre=${Uri.encodeComponent(nino.nombre)}',
+                );
+              }
+            },
+            child: Text(puedeEnviar ? 'Enviar' : 'Responder'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
   // WIZARD
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ══════════════════════════════════════════════════════════════════════════
   Widget _buildWizard(bool canGoBack) {
     const titles = [
-      'Datos bÃ¡sicos',
+      'Datos básicos',
       'Perfil de aprendizaje',
       'Entorno y aprendizaje',
       'Intereses y resumen'
     ];
     const subs = [
-      'InformaciÃ³n general del niÃ±o.',
-      'CÃ³mo aprende mejor y quÃ© le resulta difÃ­cil.',
+      'Información general del niño.',
+      'Cómo aprende mejor y qué le resulta difícil.',
       'Distractores, lugar y rutinas de estudio.',
-      'Intereses, motivaciÃ³n y resumen del perfil.',
+      'Intereses, motivación y resumen del perfil.',
     ];
     return SafeArea(
         child: Column(children: [
@@ -647,7 +874,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16))),
-              child: Text('AtrÃ¡s',
+              child: Text('Atrás',
                   style:
                       GoogleFonts.plusJakartaSans(fontWeight: FontWeight.bold)),
             )),
@@ -698,7 +925,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
               onPressed: onBack),
           const SizedBox(width: 4),
         ],
-        // Logotipo SendaIA premium con doble cÃ­rculo lila coherente y texto oscuro
+        // Logotipo SendaIA premium con doble círculo lila coherente y texto oscuro
         SizedBox(
           width: 24,
           height: 14,
@@ -737,7 +964,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded,
                 color: _kA, size: 26),
-            tooltip: 'Registrar otro niÃ±o',
+            tooltip: 'Registrar otro niño',
             onPressed: () => setState(() {
               _reset();
               _wizardMode = true;
@@ -839,7 +1066,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'No tienes notificaciones aÃºn',
+                                  'No tienes notificaciones aún',
                                   style: TextStyle(
                                     color: _kSub.withValues(alpha: 0.6),
                                     fontWeight: FontWeight.bold,
@@ -907,7 +1134,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                                           IconButton(
                                             icon: const Icon(Icons.done,
                                                 size: 18, color: _kP),
-                                            tooltip: 'Marcar como leÃ­da',
+                                            tooltip: 'Marcar como leída',
                                             constraints: const BoxConstraints(),
                                             padding: EdgeInsets.zero,
                                             onPressed: () async {
@@ -960,7 +1187,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     );
   }
 
-  // â”€â”€ Page 1: Datos bÃ¡sicos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Page 1: Datos básicos ─────────────────────────────────────────────────
   Widget _page1() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -968,7 +1195,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                _field('NOMBRE DEL NIÃ‘O', 'Ej: Mateo GarcÃ­a', _nameCtrl),
+                _field('NOMBRE DEL NIÑO', 'Ej: Mateo García', _nameCtrl),
                 const SizedBox(height: 16),
                 _label('FECHA DE NACIMIENTO'),
                 InkWell(
@@ -983,11 +1210,11 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   )),
                 ),
                 const SizedBox(height: 16),
-                _field('DIAGNÃ“STICO PREVIO DE TDAH (OPCIONAL)',
+                _field('DIAGNÓSTICO PREVIO DE TDAH (OPCIONAL)',
                     'Ej: TDAH diagnosticado por especialista', _diagCtrl),
                 const SizedBox(height: 8),
                 Text(
-                  'Registro opcional del diagnÃ³stico ya realizado por un profesional. AquÃ­ no se hace ningÃºn diagnÃ³stico automÃ¡tico.',
+                  'Registro opcional del diagnóstico ya realizado por un profesional. Aquí no se hace ningún diagnóstico automático.',
                   style: GoogleFonts.plusJakartaSans(
                       fontSize: 11, color: _kSub, height: 1.4),
                 ),
@@ -995,7 +1222,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ]),
       );
 
-  // â”€â”€ Page 2: Perfil de aprendizaje â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Page 2: Perfil de aprendizaje ─────────────────────────────────────────
   Widget _page2() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -1004,7 +1231,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                 _choice(
-                    'NIVEL DE ATENCIÃ“N / CONCENTRACIÃ“N',
+                    'NIVEL DE ATENCIÓN / CONCENTRACIÓN',
                     ['Bajo', 'Moderado', 'Alto'],
                     _atencion,
                     (v) => setState(() => _atencion = v)),
@@ -1012,17 +1239,17 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                 _multi(
                     'FORMA EN QUE APRENDE MEJOR',
                     [
-                      'Visual (imÃ¡genes, demos, esquemas)',
+                      'Visual (imágenes, demos, esquemas)',
                       'Auditivo (explicaciones y lectura en voz alta)',
-                      'PrÃ¡ctico (manipular y experimentar)',
+                      'Práctico (manipular y experimentar)',
                       'Lectura y escritura',
                       'Con apoyo de otra persona'
                     ],
                     _formaAprende),
                 const SizedBox(height: 20),
                 _editableRows(
-                  label: 'ACTIVIDADES QUE LE RESULTAN DIFÃCILES',
-                  hint: 'Ej: escribir textos, problemas de lectura, matemÃ¡ticas',
+                  label: 'ACTIVIDADES QUE LE RESULTAN DIFÍCILES',
+                  hint: 'Ej: escribir textos, problemas de lectura, matemáticas',
                   controller: _actDificilesCtrl,
                   rows: _actDificiles,
                   onAdd: () => _addRow(_actDificiles, _actDificilesCtrl),
@@ -1043,7 +1270,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ]),
       );
 
-  // â”€â”€ Page 3: Entorno y aprendizaje â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Page 3: Entorno y aprendizaje ─────────────────────────────────────────
   Widget _page3() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -1055,22 +1282,22 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                     'PRINCIPALES DISTRACTORES',
                     [
                       'Ruidos',
-                      'Pantallas o televisiÃ³n',
+                      'Pantallas o televisión',
                       'Movimiento de otras personas',
                       'Conversaciones alrededor',
-                      'TelÃ©fono o tablet',
+                      'Teléfono o tablet',
                       'Temperatura o luces'
                     ],
                     _distractores),
                 const SizedBox(height: 20),
                 _multi(
-                    'FACTORES QUE DIFICULTAN SU CONCENTRACIÃ“N',
+                    'FACTORES QUE DIFICULTAN SU CONCENTRACIÓN',
                     [
-                      'Poco sueÃ±o',
+                      'Poco sueño',
                       'Cansancio',
                       'Hambre',
                       'Ansiedad o preocupaciones',
-                      'Demasiados estÃ­mulos',
+                      'Demasiados estímulos',
                       'Falta de rutina'
                     ],
                     _factores),
@@ -1079,7 +1306,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                     'LUGAR HABITUAL DE ESTUDIO',
                     [
                       'Escritorio o mesa en casa',
-                      'Su habitaciÃ³n',
+                      'Su habitación',
                       'Comedor o sala',
                       'Biblioteca',
                       'Otro lugar'
@@ -1099,8 +1326,8 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                 _choice(
                     'NECESIDAD DE PAUSAS DURANTE LAS ACTIVIDADES',
                     [
-                      'SÃ­, con frecuencia',
-                      'SÃ­, de forma ocasional',
+                      'Sí, con frecuencia',
+                      'Sí, de forma ocasional',
                       'No necesita pausas'
                     ],
                     _pausas,
@@ -1109,7 +1336,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ]),
       );
 
-  // â”€â”€ Page 4: Intereses y resumen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Page 4: Intereses y resumen ───────────────────────────────────────────
   Widget _page4() => SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
         child: Column(children: [
@@ -1123,16 +1350,16 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                       'Dinosaurios',
                       'Trenes',
                       'Espacio',
-                      'GeometrÃ­a',
-                      'NÃºmeros',
-                      'MÃºsica',
+                      'Geometría',
+                      'Números',
+                      'Música',
                       'Animales'
                     ],
                     _int),
                 const SizedBox(height: 24),
                 _editableRows(
                   label: 'ACTIVIDADES QUE LO MOTIVAN',
-                  hint: 'Ej: juegos de mesa, pintar, deporte, mÃºsica',
+                  hint: 'Ej: juegos de mesa, pintar, deporte, música',
                   controller: _motivanCtrl,
                   rows: _motivan,
                   onAdd: () => _addRow(_motivan, _motivanCtrl),
@@ -1163,19 +1390,19 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                       _summaryRow(
                           'Nombre:',
                           _nameCtrl.text.trim().isEmpty
-                              ? 'â€”'
+                              ? '—'
                               : _nameCtrl.text.trim()),
                       const Divider(color: Color(0xFFC8E9F7), height: 16),
                       _summaryRow('Fecha nac.:',
-                          _dateCtrl.text.isEmpty ? 'â€”' : _dateCtrl.text),
+                          _dateCtrl.text.isEmpty ? '—' : _dateCtrl.text),
                       const Divider(color: Color(0xFFC8E9F7), height: 16),
                       _summaryRow(
-                          'DiagnÃ³stico:',
+                          'Diagnóstico:',
                           _diagCtrl.text.trim().isEmpty
                               ? 'No especificado'
                               : _diagCtrl.text.trim()),
                       const Divider(color: Color(0xFFC8E9F7), height: 16),
-                      _summaryRow('AtenciÃ³n:', _atencion),
+                      _summaryRow('Atención:', _atencion),
                       const Divider(color: Color(0xFFC8E9F7), height: 16),
                       _summaryRow(
                           'Aprende mejor con:',
@@ -1209,7 +1436,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                                 child: Text(
-                              'Al registrar, el perfil de aprendizaje quedarÃ¡ guardado para generar recomendaciones personalizadas para ti.',
+                              'Al registrar, el perfil de aprendizaje quedará guardado para generar recomendaciones personalizadas para ti.',
                               style: GoogleFonts.plusJakartaSans(
                                   fontSize: 12,
                                   color: const Color(0xFF2E34A8),
@@ -1259,7 +1486,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         ]),
       );
 
-  // â”€â”€ Widget helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Widget helpers ────────────────────────────────────────────────────────
   Widget _card({required Widget child, Color? backgroundColor}) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(24),
@@ -1498,173 +1725,38 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       );
 }
 
-// â”€â”€ Status badge definition â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-class _StatusBadgeInfo {
-  final IconData icon;
-  final String label;
-  final Color bgColor;
-  final Color borderColor;
-  final Color textColor;
-
-  const _StatusBadgeInfo({
-    required this.icon,
-    required this.label,
-    required this.bgColor,
-    required this.borderColor,
-    required this.textColor,
-  });
-}
-
-_StatusBadgeInfo _getStatusBadgeInfo(String estado) {
-  return switch (estado) {
-    'plan_activo' => const _StatusBadgeInfo(
-        icon: Icons.rocket_launch_outlined,
-        label: 'Perfil de aprendizaje activo',
-        bgColor: Color(0xFFF5F0FF),
-        borderColor: Color(0xFFD6D0FF),
-        textColor: Color(0xFF3F47C9),
-      ),
-    'listo_para_plan' => const _StatusBadgeInfo(
-        icon: Icons.check_circle_outline,
-        label: 'Perfil de aprendizaje completo',
-        bgColor: Color(0xFFEFF6FF),
-        borderColor: Color(0xFFBFDBFE),
-        textColor: Color(0xFF1D4ED8),
-      ),
-    'vinculado_terapeuta' => const _StatusBadgeInfo(
-        icon: Icons.people_outline,
-        label: 'Perfil de aprendizaje registrado',
-        bgColor: Color(0xFFFFFBEB),
-        borderColor: Color(0xFFFDE68A),
-        textColor: Color(0xFFB45309),
-      ),
-    'perfil_clinico_incompleto' => const _StatusBadgeInfo(
-        icon: Icons.warning_amber_outlined,
-        label: 'Completando perfil',
-        bgColor: Color(0xFFFEF2F2),
-        borderColor: Color(0xFFFEE2E2),
-        textColor: Color(0xFFDC2626),
-      ),
-    _ => const _StatusBadgeInfo(
-        icon: Icons.check_circle_outline,
-        label: 'Perfil de aprendizaje registrado',
-        bgColor: Color(0xFFEFF5FA),
-        borderColor: Color(0xFFD5E3F0),
-        textColor: Color(0xFF4A688C),
-      ),
-  };
-}
-
-// â”€â”€ Patient status card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-String _percent(double value) => '${(value * 100).clamp(0, 100).round()}%';
-
-class _FamilyMetricPill extends StatelessWidget {
-  final IconData icon;
+class _ProfileSummaryLine extends StatelessWidget {
   final String label;
   final String value;
-  final Color accent;
 
-  const _FamilyMetricPill({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.accent = _kA,
-  });
+  const _ProfileSummaryLine({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _kBdr.withValues(alpha: 0.7)),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: accent.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 18, color: accent == _kA ? _kText : accent),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: _kText,
-                  ),
-                ),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: _kSub,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProgressTile extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-
-  const _ProgressTile({
-    required this.label,
-    required this.value,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kBdr.withValues(alpha: 0.7)),
-      ),
-      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 18, color: _kSub),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 16,
-              fontWeight: FontWeight.w800,
-              color: _kText,
+          SizedBox(
+            width: 136,
+            child: Text(
+              label,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _kSub,
+              ),
             ),
           ),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-              color: _kSub,
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: _kText,
+              ),
             ),
           ),
         ],
@@ -1673,326 +1765,207 @@ class _ProgressTile extends StatelessWidget {
   }
 }
 
-class _PatientCard extends ConsumerWidget {
-  final PacienteDashboard p;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-  const _PatientCard({
-    required this.p,
-    required this.onEdit,
-    required this.onDelete,
-  });
+class _RecentFamilyActivity extends ConsumerWidget {
+  final String ninoId;
+
+  const _RecentFamilyActivity({required this.ninoId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final badge = _getStatusBadgeInfo(p.estadoClinico);
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _kSurf,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBdr.withValues(alpha: 0.5)),
+    final today = DateTime.now();
+    final hasta = DateTime(today.year, today.month, today.day);
+    final args = (
+      ninoId: ninoId,
+      desde: hasta.subtract(const Duration(days: 30)),
+      hasta: hasta,
+    );
+    final activityAsync = ref.watch(seguimientoFamiliarProvider(args));
+
+    return activityAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (error, _) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _kBdr),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cloud_off_outlined, color: _kSub),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'No se pudo cargar la actividad reciente.',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  color: _kSub,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () =>
+                  ref.invalidate(seguimientoFamiliarProvider(args)),
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          CircleAvatar(
-            radius: 22,
-            backgroundColor: _kA.withValues(alpha: 0.4),
-            child: Text((p.nombre.isNotEmpty ? p.nombre[0] : '?').toUpperCase(),
-                style: const TextStyle(
-                    fontSize: 18, fontWeight: FontWeight.bold, color: _kText)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-              child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                Text(p.nombre,
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _kText)),
-                Text('${p.edad} aÃ±os Â· ${p.nivelCognitivo}',
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12, color: _kSub)),
-              ])),
-          IconButton(
-            tooltip: 'Editar registro',
-            icon: const Icon(Icons.edit_outlined,
-                color: Color(0xFF9CA3AF), size: 20),
-            onPressed: onEdit,
-          ),
-          IconButton(
-            tooltip: 'Eliminar registro',
-            icon: Icon(Icons.delete_outline,
-                color: Colors.red.shade400, size: 20),
-            onPressed: onDelete,
-          ),
-        ]),
-        const SizedBox(height: 14),
-        Row(
+      data: (seguimiento) {
+        if (seguimiento.registros.isEmpty) return const SizedBox.shrink();
+
+        final registros = [...seguimiento.registros]
+          ..sort((a, b) => (b.fecha ?? DateTime(1970))
+              .compareTo(a.fecha ?? DateTime(1970)));
+        final reciente = registros.first;
+        final fecha = reciente.fecha;
+        final fechaTexto = fecha == null
+            ? ''
+            : '${fecha.day}/${fecha.month}/${fecha.year}';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              'ACTIVIDAD RECIENTE',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+                color: _kSub,
+              ),
+            ),
+            const SizedBox(height: 10),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: badge.bgColor,
-                borderRadius: BorderRadius.circular(100),
-                border: Border.all(color: badge.borderColor, width: 1.0),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(badge.icon, size: 14, color: badge.textColor),
-                  const SizedBox(width: 6),
-                  Text(badge.label,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: badge.textColor,
-                      )),
-                ],
-              ),
-            ),
-            const Spacer(),
-            if (p.requiereScq && !p.scqCompletado)
-              ElevatedButton.icon(
-                icon: const Icon(Icons.quiz_outlined, size: 16),
-                label: Text("Responder SCQ",
-                    style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.bold, fontSize: 11)),
-                onPressed: () {
-                  context.push(
-                      '/padre/scq/${p.id}?nombre=${Uri.encodeComponent(p.nombre)}');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kP,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              )
-            else if (p.requiereScq && p.scqCompletado && !p.scqAutorizadoEnvio)
-              ElevatedButton.icon(
-                icon: const Icon(Icons.send_outlined, size: 16),
-                label: Text("Enviar solicitud",
-                    style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.bold, fontSize: 11)),
-                onPressed: () async {
-                  await ref
-                      .read(dashboardServiceProvider)
-                      .enviarCasoScqATerapeuta(p.id);
-                  ref.invalidate(familiaDashboardProvider);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Solicitud enviada al terapeuta.')),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kP,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-          ],
-        ),
-        if (p.requiereScq) ...[
-          const SizedBox(height: 10),
-          Text(
-            p.scqCompletado
-                ? 'SCQ: ${p.scqNivel ?? 'Sin nivel'} (${p.scqPuntaje ?? 0} puntos)'
-                : 'SCQ pendiente antes de enviar al terapeuta.',
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 12, color: _kSub, fontWeight: FontWeight.w600),
-          ),
-        ],
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: _ProgressTile(
-                icon: Icons.task_alt_outlined,
-                label: 'Cumplimiento',
-                value: _percent(p.progreso.cumplimiento),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _ProgressTile(
-                icon: Icons.trending_up_outlined,
-                label: 'Aciertos',
-                value: _percent(p.progreso.tasaAciertos),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _ProgressTile(
-                icon: Icons.event_note_outlined,
-                label: 'Sesiones',
-                value: '${p.progreso.sesionesCompletadas}',
-              ),
-            ),
-          ],
-        ),
-        if (p.ultimaSesion != null) ...[
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Icon(Icons.history_outlined, size: 14, color: _kSub),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Ultima sesion: ${p.ultimaSesion!.fecha != null ? '${p.ultimaSesion!.fecha!.day}/${p.ultimaSesion!.fecha!.month}/${p.ultimaSesion!.fecha!.year}' : 'sin fecha'}',
-                  style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12,
-                    color: _kSub,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-        if (p.alertas.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: p.alertas
-                .map(
-                  (alerta) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.warning_amber_outlined,
-                            size: 15, color: _kP),
-                        const SizedBox(width: 7),
-                        Expanded(
-                          child: Text(
-                            alerta,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              color: _kText,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
-        if (p.recomendacionesActivas.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: _kBdr.withValues(alpha: 0.7)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.lightbulb_outline,
-                        size: 16, color: Color(0xFFB08C68)),
-                    const SizedBox(width: 7),
-                    Text(
-                      'Recomendaciones activas',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        color: _kText,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...p.recomendacionesActivas.map(
-                  (recomendacion) => Padding(
-                    padding: const EdgeInsets.only(bottom: 5),
-                    child: Text(
-                      recomendacion,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 12,
-                        height: 1.35,
-                        color: _kSub,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ] else ...[
-          const SizedBox(height: 12),
-          InkWell(
-            onTap: () =>
-                context.go('/familia/sugerencias?ninoId=${p.id}'),
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _kBdr.withValues(alpha: 0.7)),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _kBdr.withValues(alpha: 0.8)),
               ),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.auto_awesome_outlined,
-                      size: 16, color: Color(0xFF7B6CF6)),
-                  const SizedBox(width: 7),
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: _kP.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.task_alt_rounded, color: _kP),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Sugerencias de actividades',
+                          reciente.actividadNombre,
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 12,
-                            color: _kText,
+                            fontSize: 14,
                             fontWeight: FontWeight.w800,
+                            color: _kText,
                           ),
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          'Descubre con IA las actividades recomendadas '
-                          'para ${p.nombre} y por quÃ© conviene hacerlas en casa.',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11.5,
-                            height: 1.35,
-                            color: _kSub,
-                            fontWeight: FontWeight.w600,
+                        if (fechaTexto.isNotEmpty)
+                          Text(
+                            fechaTexto,
+                            style: GoogleFonts.plusJakartaSans(
+                              fontSize: 12,
+                              color: _kSub,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded,
-                      size: 20, color: Color(0xFF9CA3AF)),
                 ],
               ),
             ),
-          ),
-        ],
-      ]),
+          ],
+        );
+      },
     );
   }
 }
 
+class _FamilyQuickAccessCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final Color accent;
+  final VoidCallback onTap;
+
+  const _FamilyQuickAccessCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _kBdr.withValues(alpha: 0.7)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, size: 21, color: accent),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: _kText,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _kSub,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: _kSub,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

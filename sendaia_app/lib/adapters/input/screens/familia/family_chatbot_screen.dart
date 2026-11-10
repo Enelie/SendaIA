@@ -28,7 +28,8 @@ class ChatMessage {
 }
 
 class FamilyChatbotScreen extends ConsumerStatefulWidget {
-  const FamilyChatbotScreen({super.key});
+  const FamilyChatbotScreen({super.key, this.initialNinoId});
+  final String? initialNinoId;
 
   @override
   ConsumerState<FamilyChatbotScreen> createState() =>
@@ -45,6 +46,7 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
   @override
   void initState() {
     super.initState();
+    _selectedNinoId = widget.initialNinoId;
     // Mensaje de bienvenida inicial
     _messages.add(
       ChatMessage(
@@ -232,6 +234,9 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final childQuery = _selectedNinoId == null
+        ? ''
+        : '?nino=${Uri.encodeQueryComponent(_selectedNinoId!)}';
     final familyDataAsync = ref.watch(familiaDashboardProvider);
 
     return Scaffold(
@@ -375,13 +380,13 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
         currentIndex: 4,
         onTap: (index) {
           if (index == 0) {
-            context.go('/familia/dashboard');
+            context.go('/familia/dashboard$childQuery');
           }
           if (index == 1) {
-            context.go('/familia/perfil');
+            context.go('/familia/perfil$childQuery');
           }
           if (index == 2) {
-            context.go('/familia/seguimiento');
+            context.go('/familia/seguimiento$childQuery');
           }
           if (index == 3) {
             context.go('/familia/sugerencias');

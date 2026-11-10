@@ -89,6 +89,9 @@ class _FamilyTrackingScreenState extends ConsumerState<FamilyTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     final familia = ref.watch(familiaDashboardProvider);
+    final childQuery = _selectedId == null
+        ? ''
+        : '?nino=${Uri.encodeQueryComponent(_selectedId!)}';
     return Scaffold(
       backgroundColor: _kBg,
       appBar: AppBar(
@@ -112,7 +115,7 @@ class _FamilyTrackingScreenState extends ConsumerState<FamilyTrackingScreen> {
             tooltip: 'Inicio',
             icon: const Icon(Icons.home_rounded,
                 color: Color.fromARGB(255, 60, 59, 88)),
-            onPressed: () => context.go('/familia/dashboard'),
+            onPressed: () => context.go('/familia/dashboard$childQuery'),
           ),
           const SizedBox(width: 8),
         ],
@@ -128,7 +131,7 @@ class _FamilyTrackingScreenState extends ConsumerState<FamilyTrackingScreen> {
             return _mensaje(Icons.child_care_rounded,
                 'Aún no has registrado ningún niño.',
                 accion: 'Ir a registrar',
-                onAccion: () => context.go('/familia/dashboard'));
+                onAccion: () => context.go('/familia/dashboard$childQuery'));
           }
           final nino = data.pacientes.firstWhere(
               (n) => n.id == _selectedId,
@@ -139,9 +142,15 @@ class _FamilyTrackingScreenState extends ConsumerState<FamilyTrackingScreen> {
       bottomNavigationBar: RimAIBottomNav(
         currentIndex: 2,
         onTap: (index) {
-          if (index == 0) context.go('/familia/dashboard');
-          if (index == 1) context.go('/familia/perfil');
-          if (index == 3) context.go('/familia/chatbot');
+          if (index == 0) {
+            context.go('/familia/dashboard$childQuery');
+          }
+          if (index == 1) {
+            context.go('/familia/perfil$childQuery');
+          }
+          if (index == 3) {
+            context.go('/familia/chatbot$childQuery');
+          }
         },
         items: [
           BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),

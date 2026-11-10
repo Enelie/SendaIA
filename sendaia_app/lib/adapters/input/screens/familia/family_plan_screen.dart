@@ -29,7 +29,8 @@ class FamilyPlanScreen extends ConsumerWidget {
         title: 'Plan familiar',
         leadingIcon: Icons.arrow_back,
         iconColor: _kPrimary,
-        onLeadingPressed: () => context.go('/familia/dashboard'),
+        onLeadingPressed: () =>
+            context.go('/familia/dashboard?nino=$ninoId'),
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(
