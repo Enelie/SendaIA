@@ -163,4 +163,46 @@ void main() {
     expect(find.text('TRACKING_ROUTE nino-1'), findsNothing);
     expect(find.text('TRACKING_ROUTE nino-2'), findsOneWidget);
   });
+
+  testWidgets(
+      'family home opens the registration wizard when there are no children',
+      (tester) async {
+    GoogleFonts.config.allowRuntimeFetching = false;
+    final router = GoRouter(
+      initialLocation: '/familia/dashboard',
+      routes: [
+        GoRoute(
+          path: '/familia/dashboard',
+          builder: (_, state) => FamiliaDashboardScreen(
+            initialNinoId: state.uri.queryParameters['nino'],
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          familiaDashboardProvider.overrideWith(
+            (ref) async => DashboardData.fromJson({
+              'total_pacientes': 0,
+              'sesiones_esta_semana': 0,
+              'alertas_baja_adherencia': 0,
+              'pacientes': <Map<String, dynamic>>[],
+            }),
+          ),
+          notificacionesProvider.overrideWith(
+            (ref) async => <NotificacionData>[],
+          ),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Paso 1/4'), findsOneWidget);
+    expect(find.text('Datos básicos'), findsOneWidget);
+    expect(find.text('NOMBRE DEL NIÑO'), findsOneWidget);
+  });
 }

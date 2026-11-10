@@ -417,40 +417,39 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       ),
       data: (data) {
         final showWizard = _wizardMode || data.pacientes.isEmpty;
+        if (showWizard) {
+          return Scaffold(
+            backgroundColor: _kBg,
+            body: _buildWizard(data.pacientes.isNotEmpty),
+          );
+        }
         final selectedNino = data.pacientes.firstWhere(
           (paciente) => paciente.id == _selectedHomeNinoId,
           orElse: () => data.pacientes.first,
         );
         return Scaffold(
           backgroundColor: _kBg,
-          body: showWizard
-              ? _buildWizard(data.pacientes.isNotEmpty)
-              : _buildStatus(data.pacientes, selectedNino),
-          bottomNavigationBar: showWizard
-              ? null
-              : RimAIBottomNav(
-                  currentIndex: 0,
-                  onTap: (index) {
-                    if (index == 1) {
-                      context.go('/familia/perfil?nino=${selectedNino.id}');
-                    }
-                    if (index == 2) {
-                      context
-                          .go('/familia/seguimiento?nino=${selectedNino.id}');
-                    }
-                    if (index == 3) {
-                      context.go('/familia/chatbot?nino=${selectedNino.id}');
-                    }
-                  },
-                  items: [
-                    BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
-                    BottomNavItem(icon: Icons.school_rounded, label: 'Perfil'),
-                    BottomNavItem(
-                        icon: Icons.insights_rounded, label: 'Seguimiento'),
-                    BottomNavItem(
-                        icon: Icons.forum_rounded, label: 'Asistente IA'),
-                  ],
-                ),
+          body: _buildStatus(data.pacientes, selectedNino),
+          bottomNavigationBar: RimAIBottomNav(
+            currentIndex: 0,
+            onTap: (index) {
+              if (index == 1) {
+                context.go('/familia/perfil?nino=${selectedNino.id}');
+              }
+              if (index == 2) {
+                context.go('/familia/seguimiento?nino=${selectedNino.id}');
+              }
+              if (index == 3) {
+                context.go('/familia/chatbot?nino=${selectedNino.id}');
+              }
+            },
+            items: [
+              BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
+              BottomNavItem(icon: Icons.school_rounded, label: 'Perfil'),
+              BottomNavItem(icon: Icons.insights_rounded, label: 'Seguimiento'),
+              BottomNavItem(icon: Icons.forum_rounded, label: 'Asistente IA'),
+            ],
+          ),
         );
       },
     );
