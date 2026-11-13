@@ -18,6 +18,7 @@ from app.adapters.inbound.api.seguimiento_controller import router as seguimient
 from app.adapters.inbound.api.reportes_controller import router as reportes_router
 from app.adapters.inbound.api.dashboard_controller import router as dashboard_router
 from app.adapters.inbound.api.familia_seguimiento_controller import router as familia_seguimiento_router
+from app.adapters.inbound.api.log_uso_controller import router as log_uso_router
 from app.adapters.inbound.api.exception_handlers import (
     http_exception_handler,
     psycopg2_exception_handler,
@@ -76,6 +77,7 @@ app.include_router(seguimiento_router)
 app.include_router(reportes_router)
 app.include_router(ai_router)
 app.include_router(admin_router)
+app.include_router(log_uso_router)
 
 
 @app.get("/")

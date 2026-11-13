@@ -38,7 +38,7 @@ docker compose up -d
 
 Levanta `rimai_postgres` (PostgreSQL 15, puerto 5432) y `rimai_api` (FastAPI, puerto 8000).
 El esquema y los datos de ejemplo se aplican automáticamente desde `backend/sql/`
-(`01_init.sql` … `13_migration_data_protection_compliance.sql` + seeds).
+(`01_init.sql` … `14_migration_log_uso.sql` + seeds).
 
 pgAdmin (perfil `dev`):
 ```bash

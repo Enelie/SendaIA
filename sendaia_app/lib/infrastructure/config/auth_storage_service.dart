@@ -3,6 +3,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:rimai_app/core/constants/api_constants.dart';
 
+/// Ganchos del ciclo de sesión. Los usa el registro de uso (Instrumento 3)
+/// para abrir una sesión al iniciar sesión y cerrarla antes del logout.
+/// Se configuran en main.dart; un fallo en ellos nunca bloquea la autenticación.
+class AuthSessionHooks {
+  static Future<void> Function(String usuarioId, String rol)? alGuardarSesion;
+  static Future<void> Function()? antesDeLimpiarSesion;
+}
+
 class AuthStorageService {
   final FlutterSecureStorage _storage;
 
@@ -26,7 +34,26 @@ class AuthStorageService {
       _storage.write(key: _keyUserId, value: userId),
       if (userName != null) _storage.write(key: _keyUserName, value: userName),
     ]);
+
+    final hook = AuthSessionHooks.alGuardarSesion;
+    if (hook != null) {
+      try {
+        await hook(usuarioIdDelToken(token) ?? userId, role);
+      } catch (_) {}
+    }
   }
+
+  /// usuario_id tal como lo ve el servidor (claim `id` del JWT).
+  static String? usuarioIdDelToken(String token) {
+    try {
+      final id = JwtDecoder.decode(token)['id']?.toString();
+      return (id == null || id.isEmpty) ? null : id;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _limpiando = false;
 
   /// Recupera el token JWT
   Future<String?> getToken() async {
@@ -69,6 +96,18 @@ class AuthStorageService {
 
   /// Limpia la sesión actual
   Future<void> clearSession() async {
+    final hook = AuthSessionHooks.antesDeLimpiarSesion;
+    // _limpiando evita la recursión: el hook sincroniza, lo que lee el token,
+    // y getToken() puede volver a llamar a clearSession().
+    if (hook != null && !_limpiando) {
+      _limpiando = true;
+      try {
+        await hook();
+      } catch (_) {
+      } finally {
+        _limpiando = false;
+      }
+    }
     await Future.wait([
       _storage.delete(key: _keyJwtToken),
       _storage.delete(key: _keyUserRole),

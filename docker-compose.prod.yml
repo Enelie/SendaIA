@@ -15,6 +15,7 @@ services:
       - ./backend/sql/11_migration_offline_sync.sql:/docker-entrypoint-initdb.d/11_migration_offline_sync.sql
       - ./backend/sql/12_migration_audit_trail.sql:/docker-entrypoint-initdb.d/12_migration_audit_trail.sql
       - ./backend/sql/13_migration_data_protection_compliance.sql:/docker-entrypoint-initdb.d/13_migration_data_protection_compliance.sql
+      - ./backend/sql/14_migration_log_uso.sql:/docker-entrypoint-initdb.d/14_migration_log_uso.sql
 
   api:
     volumes: !reset []

@@ -1,6 +1,7 @@
 import logging
 
 import psycopg2
+import psycopg2.errors
 from psycopg2.extras import RealDictCursor
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -278,6 +279,12 @@ def eliminar_usuario(usuario_id: str, current_user: dict = Depends(get_current_u
                 return {"status": "ok", "message": "Usuario eliminado exitosamente"}
     except HTTPException:
         raise
+    except psycopg2.errors.ForeignKeyViolation:
+        # p. ej. logs_uso / participantes_estudio (ON DELETE RESTRICT): datos del estudio.
+        raise HTTPException(
+            status_code=409,
+            detail="No se puede eliminar: el usuario tiene registros asociados (p. ej. registros de uso del estudio). En su lugar, desactiva la cuenta.",
+        )
     except Exception:
         logger.exception("Error interno al eliminar usuario admin")
         raise HTTPException(status_code=500, detail="Error interno al eliminar usuario")

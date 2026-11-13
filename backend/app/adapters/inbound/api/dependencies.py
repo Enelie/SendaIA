@@ -23,6 +23,9 @@ from app.adapters.outbound.database.postgres_plan_repository import PostgresPlan
 from app.adapters.outbound.database.postgres_seguimiento_repository import PostgresSeguimientoRepository
 from app.adapters.outbound.database.postgres_auditoria_repository import PostgresAuditoriaRepository
 from app.adapters.outbound.database.postgres_reportes_repository import PostgresReportesRepository
+from app.adapters.outbound.database.postgres_log_uso_repository import PostgresLogUsoRepository
+from app.application.usecases.sincronizar_log_uso_usecase import SincronizarLogUsoUseCase
+from app.application.usecases.exportar_log_uso_usecase import ExportarLogUsoUseCase
 from app.infrastructure.config import get_jwt_algorithm, get_jwt_secret
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -97,3 +100,12 @@ def get_evaluar_adherencia_usecase(repo = Depends(get_reportes_repository)):
 
 def get_generar_reporte_analitico_usecase(repo = Depends(get_seguimiento_repository)):
     return GenerarReporteAnaliticoUseCase(repo)
+
+def get_log_uso_repository():
+    return PostgresLogUsoRepository()
+
+def get_sincronizar_log_uso_usecase(repo = Depends(get_log_uso_repository)):
+    return SincronizarLogUsoUseCase(repo)
+
+def get_exportar_log_uso_usecase(repo = Depends(get_log_uso_repository)):
+    return ExportarLogUsoUseCase(repo)
