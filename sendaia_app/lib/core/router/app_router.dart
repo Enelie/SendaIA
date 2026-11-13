@@ -18,7 +18,6 @@ import 'package:rimai_app/adapters/input/screens/dashboard/admin_dashboard_scree
 import 'package:rimai_app/adapters/input/screens/admin/create_therapist_screen.dart';
 import 'package:rimai_app/adapters/input/screens/dashboard/patient_admission_screen.dart';
 import 'package:rimai_app/adapters/input/screens/dashboard/pending_patients_screen.dart';
-import 'package:rimai_app/adapters/input/screens/terapeuta/therapist_inbox_screen.dart';
 import 'package:rimai_app/adapters/input/screens/terapeuta/reporte_analitico_screen.dart';
 import 'package:rimai_app/adapters/input/screens/terapeuta/activities_catalog_screen.dart';
 import 'package:rimai_app/adapters/input/screens/terapeuta/plan_builder_screen.dart';
@@ -250,10 +249,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/terapeuta/calendario',
         builder: (context, state) =>
             const _PlaceholderScreen(title: 'Calendario'),
-      ),
-      GoRoute(
-        path: '/terapeuta/admision_bandeja',
-        builder: (context, state) => const TherapistInboxScreen(),
       ),
       GoRoute(
         path: '/terapeuta/plan_builder',
