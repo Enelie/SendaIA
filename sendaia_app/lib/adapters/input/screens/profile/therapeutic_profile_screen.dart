@@ -787,7 +787,7 @@ class _TherapeuticProfileScreenState
   }
 
   Widget _buildClinicalValidationCard(PacientePerfil perfil) {
-    final obligatoria = perfil.requiereScq && !perfil.tieneEvidenciaClinica;
+    final obligatoria = !perfil.tieneEvidenciaClinica;
     return BentoCard(
       backgroundColor: const Color(0xFFFAF2E9),
       child: Column(
@@ -816,7 +816,7 @@ class _TherapeuticProfileScreenState
           const SizedBox(height: 14),
           Text(
             obligatoria
-                ? 'Este caso viene de SCQ sin evidencia clinica previa. Confirma el nivel TEA y los objetivos antes de generar el plan.'
+                ? 'Este caso no tiene evidencia clinica previa. Confirma el nivel TEA y los objetivos antes de generar el plan.'
                 : 'La familia adjunto evidencia clinica o datos suficientes. Puedes confirmar o ajustar estos objetivos antes de generar el plan.',
             style: const TextStyle(color: Color(0xFF58423B), height: 1.4),
           ),
@@ -929,8 +929,7 @@ class _TherapeuticProfileScreenState
     final hasPlan = perfil.planActivoId != null;
     final isActive = estado == 'plan_activo' || estado == 'listo_para_plan';
     final isPending = estado == 'pendiente_asignacion';
-    final perfilObligatorio =
-        perfil.requiereScq && !perfil.tieneEvidenciaClinica;
+    final perfilObligatorio = !perfil.tieneEvidenciaClinica;
     final isIncomplete =
         estado == 'perfil_clinico_incompleto' && perfilObligatorio;
     final canGenerate = perfil.perfilValidado ||

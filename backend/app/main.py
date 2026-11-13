@@ -12,7 +12,6 @@ from app.adapters.inbound.api.auth_controller import router as auth_router
 from app.adapters.inbound.api.admin_controller import router as admin_router
 from app.adapters.inbound.api.patient_controller import router as patient_router
 from app.adapters.inbound.api.ai_controller import router as ai_router
-from app.adapters.inbound.api.scq_controller import router as scq_router
 from app.adapters.inbound.api.plan_controller import router as plan_router
 from app.adapters.inbound.api.seguimiento_controller import router as seguimiento_router
 from app.adapters.inbound.api.reportes_controller import router as reportes_router
@@ -71,7 +70,6 @@ app.include_router(auth_router)
 app.include_router(dashboard_router)
 app.include_router(familia_seguimiento_router)
 app.include_router(patient_router)
-app.include_router(scq_router)
 app.include_router(plan_router)
 app.include_router(seguimiento_router)
 app.include_router(reportes_router)

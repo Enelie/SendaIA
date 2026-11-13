@@ -6,26 +6,6 @@ def test_infer_nivel_tea_nivel3_in_text():
 def test_infer_nivel_tea_nivel2_in_text():
     assert _infer_nivel_tea("Nivel II diagnósis", {}) == 2
 
-def test_infer_nivel_tea_scq_alto():
-    perfil = {
-        "triaje": {
-            "scq": {
-                "nivel_indicio": "Alto"
-            }
-        }
-    }
-    assert _infer_nivel_tea("Sospecha de TEA", perfil) == 3
-
-def test_infer_nivel_tea_scq_moderado():
-    perfil = {
-        "triaje": {
-            "scq": {
-                "nivel_indicio": "Moderado"
-            }
-        }
-    }
-    assert _infer_nivel_tea("Sospecha de TEA", perfil) == 2
-
 def test_infer_nivel_tea_default():
     assert _infer_nivel_tea("Sospecha de TEA", {}) == 1
 

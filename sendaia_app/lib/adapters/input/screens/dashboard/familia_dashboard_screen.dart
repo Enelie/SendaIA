@@ -203,16 +203,13 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
   Future<void> _guardar() async {
     setState(() => _saving = true);
     try {
-      final nombreRegistrado = _nameCtrl.text.trim();
-      final debeSugerirScqLocal = _debeSugerirScq();
       final editingId = _editingNinoId;
       final service = ref.read(dashboardServiceProvider);
-      final result = editingId == null
-          ? await service.guardarPerfilNino(_perfilPayload())
-          : await service.actualizarPerfilNino(editingId, _perfilPayload());
-      final ninoId = result['id']?.toString() ?? '';
-      final requiereScq = editingId == null &&
-          (result['requiere_scq'] == true || debeSugerirScqLocal);
+      if (editingId == null) {
+        await service.guardarPerfilNino(_perfilPayload());
+      } else {
+        await service.actualizarPerfilNino(editingId, _perfilPayload());
+      }
       ref.invalidate(familiaDashboardProvider);
       setState(() {
         _wizardMode = false;
@@ -220,19 +217,13 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         _reset();
       });
       if (mounted) {
-        if (requiereScq && ninoId.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _showScqPrompt(ninoId, nombreRegistrado);
-          });
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(editingId == null
-                ? 'Niño registrado correctamente.'
-                : 'Registro actualizado correctamente.'),
-            backgroundColor: const Color(0xFF4A52D9),
-            duration: const Duration(seconds: 4),
-          ));
-        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(editingId == null
+              ? 'Niño registrado correctamente.'
+              : 'Registro actualizado correctamente.'),
+          backgroundColor: const Color(0xFF4A52D9),
+          duration: const Duration(seconds: 4),
+        ));
       }
     } catch (e) {
       if (mounted) {
@@ -243,10 +234,6 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
-  }
-
-  bool _debeSugerirScq() {
-    return _diagCtrl.text.trim().isEmpty;
   }
 
   void _reset() {
@@ -362,32 +349,6 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         );
       }
     }
-  }
-
-  void _showScqPrompt(String ninoId, String nombre) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Cuestionario SCQ sugerido'),
-        content: Text(
-          'No registraste informes, plan previo ni medicacion para $nombre. Puedes responder el SCQ como orientacion preliminar antes de enviar el caso al terapeuta.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Luego'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.push(
-                  '/padre/scq/$ninoId?nombre=${Uri.encodeComponent(nombre)}');
-            },
-            child: const Text('Responder SCQ'),
-          ),
-        ],
-      ),
-    );
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -1748,66 +1709,8 @@ class _PatientCard extends ConsumerWidget {
               ),
             ),
             const Spacer(),
-            if (p.requiereScq && !p.scqCompletado)
-              ElevatedButton.icon(
-                icon: const Icon(Icons.quiz_outlined, size: 16),
-                label: Text("Responder SCQ",
-                    style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.bold, fontSize: 11)),
-                onPressed: () {
-                  context.push(
-                      '/padre/scq/${p.id}?nombre=${Uri.encodeComponent(p.nombre)}');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kP,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              )
-            else if (p.requiereScq && p.scqCompletado && !p.scqAutorizadoEnvio)
-              ElevatedButton.icon(
-                icon: const Icon(Icons.send_outlined, size: 16),
-                label: Text("Enviar solicitud",
-                    style: GoogleFonts.plusJakartaSans(
-                        fontWeight: FontWeight.bold, fontSize: 11)),
-                onPressed: () async {
-                  await ref
-                      .read(dashboardServiceProvider)
-                      .enviarCasoScqATerapeuta(p.id);
-                  ref.invalidate(familiaDashboardProvider);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Solicitud enviada al terapeuta.')),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _kP,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
           ],
         ),
-        if (p.requiereScq) ...[
-          const SizedBox(height: 10),
-          Text(
-            p.scqCompletado
-                ? 'SCQ: ${p.scqNivel ?? 'Sin nivel'} (${p.scqPuntaje ?? 0} puntos)'
-                : 'SCQ pendiente antes de enviar al terapeuta.',
-            style: GoogleFonts.plusJakartaSans(
-                fontSize: 12, color: _kSub, fontWeight: FontWeight.w600),
-          ),
-        ],
         const SizedBox(height: 14),
         Row(
           children: [

@@ -35,12 +35,7 @@ class PacientePerfil {
   final String? planEstado;
   final int? nivelTeaValidado;
   final bool perfilValidado;
-  final bool requiereScq;
-  final bool scqCompletado;
-  final bool scqAutorizadoEnvio;
   final bool tieneEvidenciaClinica;
-  final int? scqPuntaje;
-  final String? scqNivel;
 
   PacientePerfil({
     required this.id,
@@ -61,12 +56,7 @@ class PacientePerfil {
     this.planEstado,
     this.nivelTeaValidado,
     this.perfilValidado = false,
-    this.requiereScq = false,
-    this.scqCompletado = false,
-    this.scqAutorizadoEnvio = false,
     this.tieneEvidenciaClinica = false,
-    this.scqPuntaje,
-    this.scqNivel,
   });
 
   factory PacientePerfil.fromJson(dynamic raw) {
@@ -114,15 +104,10 @@ class PacientePerfil {
       planEstado: j['plan_estado']?.toString(),
       nivelTeaValidado: (j['nivel_tea_validado'] as num?)?.toInt(),
       perfilValidado: j['perfil_validado'] == true,
-      requiereScq: j['requiere_scq'] == true,
-      scqCompletado: j['scq_completado'] == true,
-      scqAutorizadoEnvio: j['scq_autorizado_envio'] == true,
       tieneEvidenciaClinica: j['tiene_evidencia_clinica'] == true ||
           (docs.isNotEmpty ||
               (j['diagnostico']?.toString().trim().isNotEmpty ?? false) ||
               (j['medicacion_actual']?.toString().trim().isNotEmpty ?? false)),
-      scqPuntaje: (j['scq_puntaje'] as num?)?.toInt(),
-      scqNivel: j['scq_nivel']?.toString(),
     );
   }
 }

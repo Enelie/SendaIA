@@ -37,9 +37,6 @@ import 'package:rimai_app/adapters/output/sqlite_db_repository.dart';
 import 'package:rimai_app/adapters/output/api_sync_repository.dart';
 import 'package:rimai_app/core/constants/api_constants.dart';
 import 'package:rimai_app/core/providers/auth_providers.dart';
-import 'package:rimai_app/adapters/input/screens/admision/scq_form_screen.dart';
-import 'package:rimai_app/adapters/input/screens/admision/scq_result_screen.dart';
-import 'package:rimai_app/domain/entities/scq_result.dart';
 
 /// Proveedor del enrutador principal de la aplicación, conectado al estado de Riverpod.
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -365,24 +362,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => FamilyTrackingScreen(
           initialNinoId: state.uri.queryParameters['nino'],
         ),
-      ),
-      GoRoute(
-        path: '/padre/scq/resultados',
-        builder: (context, state) {
-          final result = state.extra;
-          if (result is! SCQResult) {
-            return const FamiliaDashboardScreen();
-          }
-          return SCQResultScreen(result: result);
-        },
-      ),
-      GoRoute(
-        path: '/padre/scq/:ninoId',
-        builder: (context, state) {
-          final ninoId = state.pathParameters['ninoId'] ?? '';
-          final name = state.uri.queryParameters['nombre'];
-          return SCQFormScreen(patientId: ninoId, patientName: name);
-        },
       ),
       GoRoute(
         path: '/admin/dashboard',

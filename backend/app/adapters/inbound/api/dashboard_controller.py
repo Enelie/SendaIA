@@ -415,12 +415,9 @@ def _perfil_tiene_evidencia_clinica(
 
 def _infer_nivel_tea(diagnostico: Optional[str], perfil: Optional[Dict[str, Any]]) -> int:
     text = (diagnostico or "").lower()
-    triaje = _triaje_from_perfil(perfil)
-    scq = triaje.get("scq", {}) if isinstance(triaje.get("scq"), dict) else {}
-    nivel_scq = str(scq.get("nivel_indicio") or "").lower()
-    if "nivel 3" in text or "nivel iii" in text or "alto" in nivel_scq:
+    if "nivel 3" in text or "nivel iii" in text:
         return 3
-    if "nivel 2" in text or "nivel ii" in text or "moderado" in nivel_scq:
+    if "nivel 2" in text or "nivel ii" in text:
         return 2
     return 1
 
@@ -478,7 +475,6 @@ def _build_perfil_familiar(
     perfil_actual: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     perfil_actual = perfil_actual or {}
-    triaje_actual = _triaje_from_perfil(perfil_actual)
     documentos = _documentos_from_req(
         perfil_actual.get("documentos_clinicos"),
         req.documentos_clinicos,
@@ -488,18 +484,14 @@ def _build_perfil_familiar(
         or (req.medicacion_actual or "").strip()
         or any(bool(v) for v in documentos.values())
     )
-    scq_completado = bool(triaje_actual.get("scq_completado", False))
-    envio_previo = bool(triaje_actual.get("autorizado_envio_terapeuta", False))
-
+    # Sin cuestionario de cribado: todo caso registrado llega a la bandeja
+    # del terapeuta. La evidencia clinica solo decide si el perfil clinico
+    # es obligatorio al vincular (RF05: el diagnostico es opcional).
     triaje = {
         "tiene_evidencia_clinica": evidencia_clinica,
-        "requiere_scq": not evidencia_clinica,
-        "scq_completado": scq_completado,
-        "autorizado_envio_terapeuta": evidencia_clinica or (scq_completado and envio_previo),
+        "autorizado_envio_terapeuta": True,
         "uso_no_diagnostico": True,
     }
-    if isinstance(triaje_actual.get("scq"), dict):
-        triaje["scq"] = triaje_actual["scq"]
 
     return {
         "hitos": req.hitos or {},
@@ -1894,10 +1886,6 @@ def pacientes_pendientes(current_user: dict = Depends(get_current_user)):
                 LEFT JOIN padres_tutores pt ON pt.id = n.tutor_id
                 LEFT JOIN usuarios u ON u.id = pt.usuario_id
                 WHERE n.terapeuta_id IS NULL AND n.activo = TRUE
-                  AND (
-                    COALESCE(n.perfil_sensorial->'triaje'->>'requiere_scq', 'false') <> 'true'
-                    OR COALESCE(n.perfil_sensorial->'triaje'->>'autorizado_envio_terapeuta', 'false') = 'true'
-                  )
                 ORDER BY n.created_at DESC
                 """
             )
@@ -1907,8 +1895,6 @@ def pacientes_pendientes(current_user: dict = Depends(get_current_user)):
     for r in rows:
         sensorial = r["perfil_sensorial"] or {}
         hitos = sensorial.get("hitos", {})
-        triaje = _triaje_from_perfil(sensorial)
-        scq = triaje.get("scq", {}) if isinstance(triaje.get("scq"), dict) else {}
         result.append(
             {
                 "id": str(r["id"]),
@@ -1922,10 +1908,9 @@ def pacientes_pendientes(current_user: dict = Depends(get_current_user)):
                 "comunicacion": hitos.get("comunicacion"),
                 "intereses": sensorial.get("intereses", []),
                 "tutor_nombre": r["tutor_nombre"],
-                "requiere_scq": triaje.get("requiere_scq", False),
-                "scq_completado": triaje.get("scq_completado", False),
-                "scq_puntaje": scq.get("puntaje_total"),
-                "scq_nivel": scq.get("nivel_indicio"),
+                "tiene_evidencia_clinica": _perfil_tiene_evidencia_clinica(
+                    sensorial, r["diagnostico"]
+                ),
                 "documentos_clinicos": sensorial.get("documentos_clinicos", {}),
                 "medicacion_actual": sensorial.get("medicacion_actual"),
                 "hitos": hitos,
@@ -1981,15 +1966,13 @@ def vincular_paciente_por_email(
             if not nino:
                 raise HTTPException(status_code=404, detail="Niño no encontrado")
             perfil = nino.get("perfil_sensorial") or {}
-            triaje = _triaje_from_perfil(perfil)
-            requiere_scq = bool(triaje.get("requiere_scq", False))
             tiene_evidencia = _perfil_tiene_evidencia_clinica(
                 perfil,
                 nino.get("diagnostico"),
             )
             nuevo_estado = (
                 "perfil_clinico_incompleto"
-                if requiere_scq and not tiene_evidencia
+                if not tiene_evidencia
                 else "vinculado_terapeuta"
             )
 
@@ -2068,19 +2051,17 @@ def vincular_paciente_por_id(
                 raise HTTPException(status_code=404, detail="Niño no encontrado")
 
             perfil = nino.get("perfil_sensorial") or {}
-            triaje = _triaje_from_perfil(perfil)
-            requiere_scq = bool(triaje.get("requiere_scq", False))
             tiene_evidencia = _perfil_tiene_evidencia_clinica(
                 perfil,
                 nino.get("diagnostico"),
             )
             
-            perfil_obligatorio = requiere_scq and not tiene_evidencia
+            perfil_obligatorio = not tiene_evidencia
             
             if omitir_perfil and perfil_obligatorio:
                 raise HTTPException(
                     status_code=400,
-                    detail="El perfil clínico es obligatorio para casos SCQ sin evidencia previa"
+                    detail="El perfil clínico es obligatorio para casos sin evidencia clínica previa"
                 )
 
             if omitir_perfil:
@@ -2308,8 +2289,6 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
     for n in ninos:
         nino_id = str(n["id"])
         perfil = n["perfil_sensorial"] or {}
-        triaje = _triaje_from_perfil(perfil)
-        scq = triaje.get("scq", {}) if isinstance(triaje.get("scq"), dict) else {}
         progreso_row = progreso_por_nino.get(nino_id, {})
         ultima_row = ultima_sesion_por_nino.get(nino_id)
 
@@ -2324,8 +2303,6 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
         }
 
         alertas = []
-        if triaje.get("requiere_scq", False) and not triaje.get("scq_completado", False):
-            alertas.append("SCQ pendiente para completar la informacion clinica.")
         if not n["plan_activo_id"]:
             alertas.append("Aun no hay una recomendacion publicada para la familia.")
         elif progreso["sesiones_completadas"] == 0:
@@ -2375,11 +2352,6 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
             "rutinas_regulacion": perfil.get("rutinas_regulacion", []),
             "documentos_clinicos": perfil.get("documentos_clinicos", {}),
             "medicacion_actual": perfil.get("medicacion_actual"),
-            "requiere_scq": triaje.get("requiere_scq", False),
-            "scq_completado": triaje.get("scq_completado", False),
-            "scq_autorizado_envio": triaje.get("autorizado_envio_terapeuta", False),
-            "scq_puntaje": scq.get("puntaje_total"),
-            "scq_nivel": scq.get("nivel_indicio"),
         })
 
     return {
@@ -2527,7 +2499,6 @@ def registrar_nino(
                     "nivel_cognitivo": req.nivel_cognitivo,
                     "diagnostico": req.diagnostico,
                     "estado_clinico": "pendiente_asignacion",
-                    "requiere_scq": triaje.get("requiere_scq", False),
                     "consentimiento_id": str(consentimiento["id"]),
                 },
             )
@@ -2535,7 +2506,6 @@ def registrar_nino(
     return {
         "id": str(nino["id"]),
         "nombre": req.nombre,
-        "requiere_scq": triaje.get("requiere_scq", False),
         "autorizado_envio_terapeuta": triaje.get("autorizado_envio_terapeuta", False),
     }
 
@@ -2627,7 +2597,6 @@ def actualizar_nino_familia(
                     "fecha_nacimiento": req.fecha_nacimiento,
                     "nivel_cognitivo": req.nivel_cognitivo,
                     "diagnostico": req.diagnostico,
-                    "requiere_scq": triaje.get("requiere_scq", False),
                     "consentimiento_id": str(consentimiento["id"]),
                 },
             )
@@ -2635,7 +2604,6 @@ def actualizar_nino_familia(
     return {
         "id": str(updated["id"]),
         "nombre": req.nombre,
-        "requiere_scq": triaje.get("requiere_scq", False),
         "autorizado_envio_terapeuta": triaje.get("autorizado_envio_terapeuta", False),
     }
 
@@ -2738,7 +2706,6 @@ def subir_documento_clinico(
 
             triaje = _triaje_from_perfil(perfil)
             triaje["tiene_evidencia_clinica"] = True
-            triaje["requiere_scq"] = False
             triaje["autorizado_envio_terapeuta"] = True
             perfil["triaje"] = triaje
 
@@ -4641,13 +4608,11 @@ def generar_plan_ia(
                 raise HTTPException(status_code=404, detail="Niño no encontrado")
 
             perfil_sensorial = nino.get("perfil_sensorial") or {}
-            triaje = _triaje_from_perfil(perfil_sensorial)
-            requiere_scq = bool(triaje.get("requiere_scq", False))
             tiene_evidencia = _perfil_tiene_evidencia_clinica(
                 perfil_sensorial,
                 nino.get("diagnostico"),
             )
-            perfil_obligatorio = requiere_scq and not tiene_evidencia
+            perfil_obligatorio = not tiene_evidencia
 
             if perfil_obligatorio and (
                 not nino.get("nivel_tea_validado") or not nino.get("perfil_validado_at")
@@ -4656,7 +4621,7 @@ def generar_plan_ia(
                     status_code=422,
                     detail={
                         "mensaje": (
-                            "Este caso viene de SCQ sin evidencia clinica previa. "
+                            "Este caso no tiene evidencia clinica previa. "
                             "El terapeuta debe validar el perfil clinico y el nivel TEA "
                             "antes de generar el plan terapeutico."
                         )
@@ -4868,8 +4833,6 @@ def obtener_perfil_nino(
                 raise HTTPException(status_code=403, detail="Acceso denegado")
 
     sensorial = nino["perfil_sensorial"] or {}
-    triaje = _triaje_from_perfil(sensorial)
-    scq = triaje.get("scq", {}) if isinstance(triaje.get("scq"), dict) else {}
     return {
         "id": str(nino["id"]),
         "nombre": nino["nombre"],
@@ -4883,11 +4846,6 @@ def obtener_perfil_nino(
         "rutinas_regulacion": sensorial.get("rutinas_regulacion", []),
         "documentos_clinicos": sensorial.get("documentos_clinicos", {}),
         "medicacion_actual": sensorial.get("medicacion_actual"),
-        "requiere_scq": triaje.get("requiere_scq", False),
-        "scq_completado": triaje.get("scq_completado", False),
-        "scq_autorizado_envio": triaje.get("autorizado_envio_terapeuta", False),
-        "scq_puntaje": scq.get("puntaje_total"),
-        "scq_nivel": scq.get("nivel_indicio"),
         "tiene_evidencia_clinica": _perfil_tiene_evidencia_clinica(
             sensorial,
             nino["diagnostico"],

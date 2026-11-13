@@ -346,7 +346,7 @@ class _DetailSheetState extends ConsumerState<_DetailSheet> {
     final p = widget.paciente;
     bool shouldEdit = true;
 
-    if (!p.requiereScq) {
+    if (p.tieneEvidenciaClinica) {
       final res = await _showVinculacionDialog(context);
       if (res == null) return; // canceló
       shouldEdit = res;
@@ -633,7 +633,7 @@ class _DetailSheetState extends ConsumerState<_DetailSheet> {
                     _row('Familia / Tutor', p.tutorNombre ?? 'No registrado'),
                     if (p.diagnostico != null) _row('Diagnóstico', p.diagnostico!),
                     _row('Medicación Actual', p.medicacionActual ?? 'Ninguna reportada'),
-                    if (p.requiereScq) ...[
+                    if (!p.tieneEvidenciaClinica) ...[
                       const SizedBox(height: 8),
                       Container(
                         padding: const EdgeInsets.all(10),
@@ -648,7 +648,7 @@ class _DetailSheetState extends ConsumerState<_DetailSheet> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Caso SCQ obligatorio · Puntaje: ${p.scqPuntaje ?? "Sin datos"} (${p.scqNivel ?? "Sin datos"})',
+                                'Sin evidencia clínica previa · perfil clínico obligatorio al vincular',
                                 style: GoogleFonts.plusJakartaSans(fontSize: 12, color: _kP, fontWeight: FontWeight.bold),
                               ),
                             ),
@@ -692,7 +692,7 @@ class _DetailSheetState extends ConsumerState<_DetailSheet> {
                     const Icon(Icons.info_outline, color: Color(0xFF4A624D), size: 16),
                     const SizedBox(width: 10),
                     Expanded(child: Text(
-                      p.requiereScq
+                      !p.tieneEvidenciaClinica
                           ? 'Al vincular, deberás completar obligatoriamente el perfil clínico antes de generar el plan terapéutico.'
                           : 'Al vincular, podrás rellenar el perfil clínico ahora o utilizar el expediente familiar para generar el plan terapéutico con IA.',
                       style: GoogleFonts.plusJakartaSans(fontSize: 12, color: _kText),

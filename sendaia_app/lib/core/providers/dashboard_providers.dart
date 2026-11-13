@@ -174,11 +174,6 @@ class PacienteDashboard {
   final List<String> rutinasRegulacion;
   final Map<String, dynamic> documentosClinicos;
   final String? medicacionActual;
-  final bool requiereScq;
-  final bool scqCompletado;
-  final bool scqAutorizadoEnvio;
-  final int? scqPuntaje;
-  final String? scqNivel;
 
   PacienteDashboard({
     required this.id,
@@ -203,11 +198,6 @@ class PacienteDashboard {
     this.rutinasRegulacion = const [],
     this.documentosClinicos = const {},
     this.medicacionActual,
-    this.requiereScq = false,
-    this.scqCompletado = false,
-    this.scqAutorizadoEnvio = false,
-    this.scqPuntaje,
-    this.scqNivel,
   });
 
   factory PacienteDashboard.fromJson(dynamic raw) {
@@ -237,11 +227,6 @@ class PacienteDashboard {
       rutinasRegulacion: _stringList(j['rutinas_regulacion']),
       documentosClinicos: _optionalMap(j['documentos_clinicos']),
       medicacionActual: j['medicacion_actual']?.toString(),
-      requiereScq: j['requiere_scq'] == true,
-      scqCompletado: j['scq_completado'] == true,
-      scqAutorizadoEnvio: j['scq_autorizado_envio'] == true,
-      scqPuntaje: (j['scq_puntaje'] as num?)?.toInt(),
-      scqNivel: j['scq_nivel']?.toString(),
     );
   }
 }
@@ -294,10 +279,7 @@ class NinoPendiente {
   final String? tutorNombre;
   final Map<String, dynamic> documentosClinicos;
   final String? medicacionActual;
-  final bool requiereScq;
-  final bool scqCompletado;
-  final int? scqPuntaje;
-  final String? scqNivel;
+  final bool tieneEvidenciaClinica;
   final Map<String, dynamic> hitos;
   final Map<String, dynamic> estimulosAversivos;
   final List<String> rutinasRegulacion;
@@ -315,10 +297,7 @@ class NinoPendiente {
     this.tutorNombre,
     this.documentosClinicos = const {},
     this.medicacionActual,
-    this.requiereScq = false,
-    this.scqCompletado = false,
-    this.scqPuntaje,
-    this.scqNivel,
+    this.tieneEvidenciaClinica = false,
     this.hitos = const {},
     this.estimulosAversivos = const {},
     this.rutinasRegulacion = const [],
@@ -343,10 +322,7 @@ class NinoPendiente {
       tutorNombre: j['tutor_nombre']?.toString(),
       documentosClinicos: _optionalMap(j['documentos_clinicos']),
       medicacionActual: j['medicacion_actual']?.toString(),
-      requiereScq: j['requiere_scq'] == true,
-      scqCompletado: j['scq_completado'] == true,
-      scqPuntaje: (j['scq_puntaje'] as num?)?.toInt(),
-      scqNivel: j['scq_nivel']?.toString(),
+      tieneEvidenciaClinica: j['tiene_evidencia_clinica'] == true,
       hitos: _optionalMap(j['hitos']),
       estimulosAversivos: _optionalMap(j['estimulos_aversivos']),
       rutinasRegulacion: _stringList(j['rutinas_regulacion']),
@@ -865,15 +841,6 @@ class DashboardService {
       return (response.data as Map).cast<String, dynamic>();
     } on DioException catch (e) {
       throw Exception(_extractDetail(e, 'Error al guardar el perfil clínico.'));
-    }
-  }
-
-  Future<void> enviarCasoScqATerapeuta(String ninoId) async {
-    try {
-      await _dio.post('/api/v1/admision/$ninoId/enviar-terapeuta');
-    } on DioException catch (e) {
-      throw Exception(
-          _extractDetail(e, 'Error al enviar el caso al terapeuta.'));
     }
   }
 
