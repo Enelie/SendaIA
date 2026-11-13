@@ -83,7 +83,7 @@ BEGIN
       'Desarrollar comunicacion funcional con apoyo verbal',
       'Reducir evitacion ante estimulos auditivos'
     ],
-    'TEA nivel 1 - perfil demo',
+    'TDAH - perfil demo',
     NULL,
     v_terapeuta_id,
     v_tutor_id,
