@@ -40,7 +40,7 @@ class _TherapeuticProfileScreenState
   bool _dataInitialized = false;
   bool _isGeneratingPlan = false;
   bool _isSavingValidation = false;
-  int _nivelTea = 1;
+  int _nivelAcompanamiento = 2;
 
   @override
   void dispose() {
@@ -87,8 +87,9 @@ class _TherapeuticProfileScreenState
             _selectedInterests = List.from(perfil.intereses);
             _aversiveStimuli = perfil.estimulosAversivos
                 .map((key, value) => MapEntry(key, List<String>.from(value)));
-            _nivelTea = perfil.nivelTeaValidado ??
-                _nivelTeaFromDiagnosis(perfil.diagnostico);
+            // Sugerencia del backend a partir de RF07; el terapeuta la valida.
+            _nivelAcompanamiento = perfil.nivelAcompanamiento ??
+                perfil.nivelAcompanamientoSugerido;
             _objectivesController.text = perfil.objetivosIntervencion.isEmpty
                 ? 'Mejorar comunicacion funcional\nIncrementar tolerancia a rutinas guiadas\nFortalecer autonomia en actividades diarias'
                 : perfil.objetivosIntervencion.join('\n');
@@ -231,13 +232,6 @@ class _TherapeuticProfileScreenState
         }
       },
     );
-  }
-
-  int _nivelTeaFromDiagnosis(String? diagnostico) {
-    final text = (diagnostico ?? '').toLowerCase();
-    if (text.contains('nivel 3') || text.contains('nivel iii')) return 3;
-    if (text.contains('nivel 2') || text.contains('nivel ii')) return 2;
-    return 1;
   }
 
   Widget _buildPatientInfoCard() {
@@ -816,21 +810,25 @@ class _TherapeuticProfileScreenState
           const SizedBox(height: 14),
           Text(
             obligatoria
-                ? 'Este caso no tiene evidencia clinica previa. Confirma el nivel TEA y los objetivos antes de generar el plan.'
+                ? 'Este caso no tiene evidencia clinica previa. Confirma el nivel de acompañamiento y los objetivos antes de generar el plan.'
                 : 'La familia adjunto evidencia clinica o datos suficientes. Puedes confirmar o ajustar estos objetivos antes de generar el plan.',
             style: const TextStyle(color: Color(0xFF58423B), height: 1.4),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<int>(
-            initialValue: _nivelTea,
-            decoration: _inputDecoration('Nivel TEA validado'),
+            initialValue: _nivelAcompanamiento,
+            decoration: _inputDecoration('Nivel de acompañamiento'),
             items: const [
-              DropdownMenuItem(value: 1, child: Text('Nivel 1')),
-              DropdownMenuItem(value: 2, child: Text('Nivel 2')),
-              DropdownMenuItem(value: 3, child: Text('Nivel 3')),
+              DropdownMenuItem(
+                  value: 1, child: Text('1 · Autónoma con supervisión')),
+              DropdownMenuItem(value: 2, child: Text('2 · Acompañada')),
+              DropdownMenuItem(
+                  value: 3, child: Text('3 · Acompañamiento continuo')),
             ],
             onChanged: (value) {
-              if (value != null) setState(() => _nivelTea = value);
+              if (value != null) {
+                setState(() => _nivelAcompanamiento = value);
+              }
             },
           ),
           const SizedBox(height: 14),
@@ -1234,7 +1232,7 @@ class _TherapeuticProfileScreenState
         ? (hasPlan
             ? 'Personaliza y planifica la siguiente sesión'
             : 'Usa datos familiares y validacion del terapeuta')
-        : 'Confirma nivel TEA y objetivos primero';
+        : 'Confirma nivel de acompañamiento y objetivos primero';
 
     return Material(
       color: Colors.transparent,
@@ -1398,9 +1396,9 @@ class _TherapeuticProfileScreenState
           'observaciones_clinicas': _clinicalNotesController.text.trim(),
         },
       );
-      await ref.read(dashboardServiceProvider).validarNivelTea(
+      await ref.read(dashboardServiceProvider).validarNivelAcompanamiento(
             ninoId: widget.ninoId,
-            nivelTea: _nivelTea,
+            nivelAcompanamiento: _nivelAcompanamiento,
             observacion: _clinicalNotesController.text.trim(),
           );
       ref.invalidate(perfilPacienteProvider(widget.ninoId));

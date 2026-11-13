@@ -427,7 +427,7 @@ class PlanData {
   final bool publicadoParaTutor;
   final int limiteActividades;
   final int limiteDuracionSegundos;
-  final int? nivelTeaValidado;
+  final int? nivelAcompanamiento;
   final List<ActividadPlan> actividades;
   final int sesionNumero;
 
@@ -441,7 +441,7 @@ class PlanData {
     this.publicadoParaTutor = false,
     this.limiteActividades = 3,
     this.limiteDuracionSegundos = 3600,
-    this.nivelTeaValidado,
+    this.nivelAcompanamiento,
     required this.actividades,
     this.sesionNumero = 1,
   });
@@ -460,7 +460,7 @@ class PlanData {
       limiteActividades: (j['limite_actividades'] as num?)?.toInt() ?? 3,
       limiteDuracionSegundos:
           (j['limite_duracion_segundos'] as num?)?.toInt() ?? 3600,
-      nivelTeaValidado: (j['nivel_tea_validado'] as num?)?.toInt(),
+      nivelAcompanamiento: (j['nivel_acompanamiento'] as num?)?.toInt(),
       actividades: j['actividades'] is List
           ? (j['actividades'] as List)
               .map((a) => ActividadPlan.fromJson(a))
@@ -671,23 +671,23 @@ class DashboardService {
     }
   }
 
-  Future<Map<String, dynamic>> validarNivelTea({
+  Future<Map<String, dynamic>> validarNivelAcompanamiento({
     required String ninoId,
-    required int nivelTea,
+    required int nivelAcompanamiento,
     String? observacion,
   }) async {
     try {
       final response = await _dio.patch(
-        '/api/dashboard/terapeuta/ninos/$ninoId/validacion-tea',
+        '/api/dashboard/terapeuta/ninos/$ninoId/validacion-acompanamiento',
         data: {
-          'nivel_tea': nivelTea,
+          'nivel_acompanamiento': nivelAcompanamiento,
           if (observacion != null && observacion.trim().isNotEmpty)
             'observacion': observacion.trim(),
         },
       );
       return (response.data as Map).cast<String, dynamic>();
     } on DioException catch (e) {
-      throw Exception(_extractDetail(e, 'Error al validar nivel TEA.'));
+      throw Exception(_extractDetail(e, 'Error al validar el nivel de acompañamiento.'));
     }
   }
 

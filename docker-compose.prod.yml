@@ -17,6 +17,7 @@ services:
       - ./backend/sql/13_migration_data_protection_compliance.sql:/docker-entrypoint-initdb.d/13_migration_data_protection_compliance.sql
       - ./backend/sql/14_migration_log_uso.sql:/docker-entrypoint-initdb.d/14_migration_log_uso.sql
       - ./backend/sql/15_migration_remove_scq.sql:/docker-entrypoint-initdb.d/15_migration_remove_scq.sql
+      - ./backend/sql/16_migration_nivel_acompanamiento.sql:/docker-entrypoint-initdb.d/16_migration_nivel_acompanamiento.sql
 
   api:
     volumes: !reset []

@@ -33,7 +33,8 @@ class PacientePerfil {
   final String? planActivoId;
   final String estadoClinico;
   final String? planEstado;
-  final int? nivelTeaValidado;
+  final int? nivelAcompanamiento;
+  final int nivelAcompanamientoSugerido;
   final bool perfilValidado;
   final bool tieneEvidenciaClinica;
 
@@ -54,7 +55,8 @@ class PacientePerfil {
     this.planActivoId,
     this.estadoClinico = 'pendiente_asignacion',
     this.planEstado,
-    this.nivelTeaValidado,
+    this.nivelAcompanamiento,
+    this.nivelAcompanamientoSugerido = 2,
     this.perfilValidado = false,
     this.tieneEvidenciaClinica = false,
   });
@@ -102,7 +104,9 @@ class PacientePerfil {
       planActivoId: j['plan_activo_id']?.toString(),
       estadoClinico: j['estado_clinico']?.toString() ?? 'pendiente_asignacion',
       planEstado: j['plan_estado']?.toString(),
-      nivelTeaValidado: (j['nivel_tea_validado'] as num?)?.toInt(),
+      nivelAcompanamiento: (j['nivel_acompanamiento'] as num?)?.toInt(),
+      nivelAcompanamientoSugerido:
+          (j['nivel_acompanamiento_sugerido'] as num?)?.toInt() ?? 2,
       perfilValidado: j['perfil_validado'] == true,
       tieneEvidenciaClinica: j['tiene_evidencia_clinica'] == true ||
           (docs.isNotEmpty ||

@@ -34,7 +34,8 @@ $MIGRATIONS = @(
     "12_migration_audit_trail.sql",
     "13_migration_data_protection_compliance.sql",
     "14_migration_log_uso.sql",
-    "15_migration_remove_scq.sql"
+    "15_migration_remove_scq.sql",
+    "16_migration_nivel_acompanamiento.sql"
 )
 
 if ($WithTestSeed) {

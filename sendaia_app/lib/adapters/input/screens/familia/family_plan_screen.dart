@@ -83,7 +83,7 @@ class FamilyPlanScreen extends ConsumerWidget {
                 if (requiereAcompanamiento) ...[
                   const SizedBox(height: 20),
                   _AcompanamientoBanner(
-                    nivelTea: plan.nivelTeaValidado,
+                    nivel: plan.nivelAcompanamiento,
                   ),
                 ],
                 const SizedBox(height: 24),
@@ -110,9 +110,9 @@ class FamilyPlanScreen extends ConsumerWidget {
 }
 
 class _AcompanamientoBanner extends StatelessWidget {
-  final int? nivelTea;
+  final int? nivel;
 
-  const _AcompanamientoBanner({required this.nivelTea});
+  const _AcompanamientoBanner({required this.nivel});
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +127,7 @@ class _AcompanamientoBanner extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Nivel TEA validado: ${nivelTea ?? 'pendiente'}. Las actividades acompanadas deben realizarse con el tutor junto al niño.',
+              'Nivel de acompañamiento: ${nivel ?? 'pendiente'}. Las actividades acompañadas deben realizarse con el tutor junto al niño.',
               style: const TextStyle(
                 color: Color(0xFF6B4300),
                 fontWeight: FontWeight.w700,

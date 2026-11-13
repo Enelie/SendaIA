@@ -104,7 +104,7 @@ class _TherapeuticPlanScreenState extends ConsumerState<TherapeuticPlanScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Estado: ${plan.estadoPlan} · Nivel TEA: ${plan.nivelTeaValidado ?? 'pendiente'} · Nivel general: ${plan.nivelDificultadActual}',
+                'Estado: ${plan.estadoPlan} · Acompañamiento: ${plan.nivelAcompanamiento ?? 'pendiente'} · Nivel general: ${plan.nivelDificultadActual}',
                 style: const TextStyle(color: _kSubtext),
               ),
               const SizedBox(height: 8),

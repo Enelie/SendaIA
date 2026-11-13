@@ -282,8 +282,8 @@ class ActualizarConfigNotificacionesRequest(BaseModel):
     umbral_inactividad_dias: Optional[int] = 7
 
 
-class ValidarNivelTeaRequest(BaseModel):
-    nivel_tea: int
+class ValidarNivelAcompanamientoRequest(BaseModel):
+    nivel_acompanamiento: int
     observacion: Optional[str] = None
 
 
@@ -413,11 +413,44 @@ def _perfil_tiene_evidencia_clinica(
     )
 
 
-def _infer_nivel_tea(diagnostico: Optional[str], perfil: Optional[Dict[str, Any]]) -> int:
-    text = (diagnostico or "").lower()
-    if "nivel 3" in text or "nivel iii" in text:
+NIVEL_ACOMPANAMIENTO_SIN_DATOS = 2
+
+
+def _infer_nivel_acompanamiento(perfil: Optional[Dict[str, Any]]) -> int:
+    """Sugiere cuanto acompanamiento del tutor necesitan las actividades (1-3).
+
+    Usa solo lo que la familia registro en RF07 (perfil_sensorial.hitos):
+    nivel de atencion, seguimiento de instrucciones, forma de aprendizaje y
+    actividades dificiles. No usa el diagnostico: el sistema no infiere ni
+    diagnostica (RF05/RF24). Es una sugerencia que el terapeuta valida.
+
+      1 = autonoma con supervision cercana
+      2 = acompanada
+      3 = acompanamiento continuo
+    """
+    hitos = (perfil or {}).get("hitos") or {}
+    if not isinstance(hitos, dict):
+        hitos = {}
+    atencion = str(hitos.get("atencion") or "").strip().lower()
+    instrucciones = str(hitos.get("seguir_instrucciones") or "").strip().lower()
+    if not atencion and not instrucciones:
+        # Sin datos de RF07 se sugiere la opcion prudente: actividad acompanada.
+        return NIVEL_ACOMPANAMIENTO_SIN_DATOS
+
+    puntos = {"bajo": 2, "moderado": 1}.get(atencion, 0)
+    if "cuesta" in instrucciones or "paso a paso" in instrucciones:
+        puntos += 2
+    elif "simples" in instrucciones:
+        puntos += 1
+    formas = [f.lower() for f in _list_from_profile(hitos.get("forma_aprende"))]
+    if any("apoyo de otra persona" in f for f in formas):
+        puntos += 1
+    if len(_list_from_profile(hitos.get("actividades_dificiles"))) >= 3:
+        puntos += 1
+
+    if puntos >= 4:
         return 3
-    if "nivel 2" in text or "nivel ii" in text:
+    if puntos >= 2:
         return 2
     return 1
 
@@ -519,7 +552,7 @@ def _normalize_estado_plan(value: Optional[str]) -> str:
     return estado
 
 
-def _normalize_nivel_tea(value: Any) -> int:
+def _normalize_nivel_acompanamiento(value: Any) -> int:
     try:
         nivel = int(value)
     except (TypeError, ValueError):
@@ -533,12 +566,12 @@ def _normalize_nivel_tea(value: Any) -> int:
         else:
             nivel = 0
     if nivel not in (1, 2, 3):
-        raise HTTPException(status_code=400, detail="El nivel TEA debe ser 1, 2 o 3")
+        raise HTTPException(status_code=400, detail="El nivel de acompañamiento debe ser 1, 2 o 3")
     return nivel
 
 
-def _modo_ejecucion_por_tea(nivel_tea: Optional[int]) -> Dict[str, Any]:
-    nivel = int(nivel_tea or 0)
+def _modo_ejecucion_por_acompanamiento(nivel_acompanamiento: Optional[int]) -> Dict[str, Any]:
+    nivel = int(nivel_acompanamiento or 0)
     requiere = nivel != 1
     return {
         "modo_ejecucion": "acompanada" if requiere else "autonoma",
@@ -587,7 +620,7 @@ def _build_recomendaciones_actividad(nino: Dict[str, Any], actividad: Dict[str, 
     else:
         recomendaciones.append("Permite que el nino intente la actividad con supervision cercana.")
 
-    nivel = int(nino.get("nivel_tea_validado") or 0)
+    nivel = int(nino.get("nivel_acompanamiento") or 0)
     if nivel >= 2:
         recomendaciones.append("Usa consignas breves, pausas predecibles y ayuda gradual si aparece frustracion.")
 
@@ -720,7 +753,7 @@ def _build_reporte_pdf(reporte: Dict[str, Any]) -> bytes:
     periodo = reporte["periodo"]
     lines = [
         "SENDAIA - Reporte terapeutico",
-        f"Paciente: {nino['nombre']} | Edad: {nino['edad']} | Nivel TEA: {nino.get('nivel_tea_validado') or 'pendiente'}",
+        f"Paciente: {nino['nombre']} | Edad: {nino['edad']} | Nivel de acompañamiento: {nino.get('nivel_acompanamiento') or 'pendiente'}",
         f"Periodo: {periodo['inicio']} a {periodo['fin']}",
         f"Generado: {reporte['generado_at']}",
         "",
@@ -1229,7 +1262,7 @@ def _validar_plan_publicable(cur, plan_id: str, terapeuta_id: str) -> Dict[str, 
             pt.estado_plan,
             pt.limite_actividades,
             pt.limite_duracion_segundos,
-            n.nivel_tea_validado,
+            n.nivel_acompanamiento,
             n.perfil_validado_at
         FROM planes_terapeuticos pt
         JOIN ninos n ON n.id = pt.nino_id
@@ -1261,8 +1294,8 @@ def _validar_plan_publicable(cur, plan_id: str, terapeuta_id: str) -> Dict[str, 
     duracion_total = int(resumen["duracion_total"] or 0)
     sin_duracion = int(resumen["sin_duracion"] or 0)
 
-    if not plan["nivel_tea_validado"]:
-        errores.append("El terapeuta debe validar el nivel TEA antes de aprobar o publicar el plan.")
+    if not plan["nivel_acompanamiento"]:
+        errores.append("El terapeuta debe validar el nivel de acompañamiento antes de aprobar o publicar el plan.")
     if not plan["perfil_validado_at"]:
         errores.append("El perfil clinico debe estar validado por el terapeuta.")
     if actividades == 0:
@@ -1288,7 +1321,7 @@ def _validar_plan_publicable(cur, plan_id: str, terapeuta_id: str) -> Dict[str, 
     return {
         "plan_id": str(plan["id"]),
         "nino_id": str(plan["nino_id"]),
-        "nivel_tea_validado": plan["nivel_tea_validado"],
+        "nivel_acompanamiento": plan["nivel_acompanamiento"],
         "actividades": actividades,
         "duracion_total_segundos": duracion_total,
     }
@@ -2065,7 +2098,7 @@ def vincular_paciente_por_id(
                 )
 
             if omitir_perfil:
-                nivel_tea = _infer_nivel_tea(nino.get("diagnostico"), perfil)
+                nivel_acompanamiento = _infer_nivel_acompanamiento(perfil)
                 objetivos = _objetivos_desde_perfil(perfil)
                 cur.execute(
                     """
@@ -2075,11 +2108,11 @@ def vincular_paciente_por_id(
                         vinculado_por = %s,
                         vinculado_at = NOW(),
                         perfil_completado_at = NOW(),
-                        nivel_tea_validado = %s,
+                        nivel_acompanamiento = %s,
                         objetivos_intervencion = %s
                     WHERE id = %s
                     """,
-                    (ter["id"], ter["id"], nivel_tea, objetivos, nino["id"]),
+                    (ter["id"], ter["id"], nivel_acompanamiento, objetivos, nino["id"]),
                 )
             else:
                 nuevo_estado = (
@@ -2154,7 +2187,7 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
                     n.id, n.nombre, n.fecha_nacimiento,
                     n.nivel_cognitivo, n.estado_clinico, n.diagnostico,
                     n.perfil_sensorial, n.objetivos_intervencion,
-                    n.nivel_tea_validado,
+                    n.nivel_acompanamiento,
                     pt.id AS plan_activo_id,
                     pt.nombre AS plan_activo,
                     pt.estado_plan AS plan_estado
@@ -2848,7 +2881,7 @@ def crear_actividad_ocupacional(
             if req.plan_id:
                 cur.execute(
                     """
-                    SELECT pt.id, pt.nino_id, n.nivel_tea_validado
+                    SELECT pt.id, pt.nino_id, n.nivel_acompanamiento
                     FROM planes_terapeuticos pt
                     JOIN ninos n ON n.id = pt.nino_id
                     WHERE pt.id = %s
@@ -2917,7 +2950,7 @@ def crear_actividad_ocupacional(
 
             asociado = False
             if req.plan_id:
-                ejecucion = _modo_ejecucion_por_tea(plan_context["nivel_tea_validado"])
+                ejecucion = _modo_ejecucion_por_acompanamiento(plan_context["nivel_acompanamiento"])
                 cur.execute(
                     "SELECT COALESCE(MAX(orden), 0) + 1 AS orden FROM plan_actividades WHERE plan_id = %s",
                     (req.plan_id,),
@@ -2997,7 +3030,7 @@ def asociar_actividad_a_plan(
 
             cur.execute(
                 """
-                SELECT pt.id, pt.nino_id, n.nivel_tea_validado
+                SELECT pt.id, pt.nino_id, n.nivel_acompanamiento
                 FROM planes_terapeuticos pt
                 JOIN ninos n ON n.id = pt.nino_id
                 WHERE pt.id = %s AND pt.terapeuta_id = %s AND pt.activo = TRUE
@@ -3036,7 +3069,7 @@ def asociar_actividad_a_plan(
             if not ya_asociada and duracion_total + int(actividad["duracion_estimada"] or 0) > MAX_DURACION_PLAN_SEGUNDOS:
                 raise HTTPException(status_code=422, detail="La duracion total del plan no puede superar 60 minutos")
 
-            ejecucion = _modo_ejecucion_por_tea(plan_context["nivel_tea_validado"])
+            ejecucion = _modo_ejecucion_por_acompanamiento(plan_context["nivel_acompanamiento"])
             cur.execute(
                 "SELECT COALESCE(MAX(orden), 0) + 1 AS orden FROM plan_actividades WHERE plan_id = %s",
                 (plan_id,),
@@ -3149,7 +3182,7 @@ def reemplazar_actividad_en_plan(
 
             cur.execute(
                 """
-                SELECT pt.id, pt.nino_id, n.nivel_tea_validado, pa.orden
+                SELECT pt.id, pt.nino_id, n.nivel_acompanamiento, pa.orden
                 FROM planes_terapeuticos pt
                 JOIN ninos n ON n.id = pt.nino_id
                 JOIN plan_actividades pa ON pa.plan_id = pt.id
@@ -3196,7 +3229,7 @@ def reemplazar_actividad_en_plan(
             if duracion_sin_actual + int(nueva["duracion_estimada"] or 0) > MAX_DURACION_PLAN_SEGUNDOS:
                 raise HTTPException(status_code=422, detail="La duracion total del plan no puede superar 60 minutos")
 
-            ejecucion = _modo_ejecucion_por_tea(plan_context["nivel_tea_validado"])
+            ejecucion = _modo_ejecucion_por_acompanamiento(plan_context["nivel_acompanamiento"])
             cur.execute(
                 """
                 UPDATE plan_actividades
@@ -3367,17 +3400,17 @@ def actualizar_dificultad_actividad_plan(
     }
 
 
-@router.patch("/api/dashboard/terapeuta/ninos/{nino_id}/validacion-tea")
-def validar_nivel_tea(
+@router.patch("/api/dashboard/terapeuta/ninos/{nino_id}/validacion-acompanamiento")
+def validar_nivel_acompanamiento(
     nino_id: str,
-    req: ValidarNivelTeaRequest,
+    req: ValidarNivelAcompanamientoRequest,
     current_user: dict = Depends(get_current_user),
 ):
     if current_user["role"] != "terapeuta":
-        raise HTTPException(status_code=403, detail="Solo terapeutas pueden validar nivel TEA")
+        raise HTTPException(status_code=403, detail="Solo terapeutas pueden validar el nivel de acompañamiento")
 
-    nivel_tea = _normalize_nivel_tea(req.nivel_tea)
-    ejecucion = _modo_ejecucion_por_tea(nivel_tea)
+    nivel_acompanamiento = _normalize_nivel_acompanamiento(req.nivel_acompanamiento)
+    ejecucion = _modo_ejecucion_por_acompanamiento(nivel_acompanamiento)
 
     with _conn() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -3392,7 +3425,7 @@ def validar_nivel_tea(
             cur.execute(
                 """
                 UPDATE ninos
-                SET nivel_tea_validado = %s,
+                SET nivel_acompanamiento = %s,
                     perfil_validado_por = %s,
                     perfil_validado_at = NOW(),
                     estado_clinico = CASE
@@ -3405,7 +3438,7 @@ def validar_nivel_tea(
                   AND activo = TRUE
                 RETURNING id, estado_clinico
                 """,
-                (nivel_tea, ter["id"], nino_id, ter["id"]),
+                (nivel_acompanamiento, ter["id"], nino_id, ter["id"]),
             )
             nino = cur.fetchone()
             if not nino:
@@ -3425,7 +3458,7 @@ def validar_nivel_tea(
             )
 
             detalle = {
-                "nivel_tea": nivel_tea,
+                "nivel_acompanamiento": nivel_acompanamiento,
                 "requiere_acompanamiento": ejecucion["requiere_acompanamiento"],
                 "observacion": req.observacion,
             }
@@ -3438,8 +3471,8 @@ def validar_nivel_tea(
                 (
                     ter["id"],
                     nino_id,
-                    "validacion_nivel_tea",
-                    "VALIDAR_NIVEL_TEA",
+                    "validacion_nivel_acompanamiento",
+                    "VALIDAR_NIVEL_ACOMPANAMIENTO",
                     json.dumps(detalle, ensure_ascii=False),
                 ),
             )
@@ -3447,7 +3480,7 @@ def validar_nivel_tea(
                 cur,
                 usuario_id=current_user["id"],
                 rol_usuario=current_user["role"],
-                accion="NIVEL_TEA_VALIDADO",
+                accion="NIVEL_ACOMPANAMIENTO_VALIDADO",
                 entidad_afectada="ninos",
                 entidad_id=nino_id,
                 nino_id=nino_id,
@@ -3496,7 +3529,7 @@ def actualizar_estado_plan(
                     WHERE pt.nino_id = n.id
                       AND pt.id = %s
                       AND pt.terapeuta_id = %s
-                      AND n.nivel_tea_validado IS NOT NULL
+                      AND n.nivel_acompanamiento IS NOT NULL
                       AND n.activo = TRUE
                     """,
                     (ter["id"], plan_id, ter["id"]),
@@ -3624,7 +3657,7 @@ def obtener_plan_activo(
                         pt.nivel_dificultad_actual, pt.estado_plan,
                         pt.aprobado_at, pt.publicado_at, pt.publicado_para_tutor,
                         pt.limite_actividades, pt.limite_duracion_segundos,
-                        n.nivel_tea_validado, n.nivel_cognitivo,
+                        n.nivel_acompanamiento, n.nivel_cognitivo,
                         n.perfil_sensorial, n.objetivos_intervencion
                     FROM planes_terapeuticos pt
                     JOIN ninos n ON n.id = pt.nino_id
@@ -3653,7 +3686,7 @@ def obtener_plan_activo(
                         pt.nivel_dificultad_actual, pt.estado_plan,
                         pt.aprobado_at, pt.publicado_at, pt.publicado_para_tutor,
                         pt.limite_actividades, pt.limite_duracion_segundos,
-                        n.nivel_tea_validado, n.nivel_cognitivo,
+                        n.nivel_acompanamiento, n.nivel_cognitivo,
                         n.perfil_sensorial, n.objetivos_intervencion
                     FROM planes_terapeuticos pt
                     JOIN ninos n ON n.id = pt.nino_id
@@ -3673,7 +3706,7 @@ def obtener_plan_activo(
                         pt.nivel_dificultad_actual, pt.estado_plan,
                         pt.aprobado_at, pt.publicado_at, pt.publicado_para_tutor,
                         pt.limite_actividades, pt.limite_duracion_segundos,
-                        n.nivel_tea_validado
+                        n.nivel_acompanamiento
                     FROM planes_terapeuticos pt
                     JOIN ninos n ON n.id = pt.nino_id
                     WHERE pt.nino_id = %s AND pt.activo = TRUE
@@ -3734,7 +3767,7 @@ def obtener_plan_activo(
         "publicado_para_tutor": plan["publicado_para_tutor"],
         "limite_actividades": plan["limite_actividades"],
         "limite_duracion_segundos": plan["limite_duracion_segundos"],
-        "nivel_tea_validado": plan["nivel_tea_validado"],
+        "nivel_acompanamiento": plan["nivel_acompanamiento"],
         "actividades": [
             {
                 "id": str(a["id"]),
@@ -4596,7 +4629,7 @@ def generar_plan_ia(
                 """
                 SELECT
                     id, nombre, fecha_nacimiento, nivel_cognitivo, diagnostico, perfil_sensorial,
-                    objetivos_intervencion, estado_clinico, nivel_tea_validado,
+                    objetivos_intervencion, estado_clinico, nivel_acompanamiento,
                     perfil_validado_at
                 FROM ninos
                 WHERE id = %s AND activo = TRUE
@@ -4615,26 +4648,25 @@ def generar_plan_ia(
             perfil_obligatorio = not tiene_evidencia
 
             if perfil_obligatorio and (
-                not nino.get("nivel_tea_validado") or not nino.get("perfil_validado_at")
+                not nino.get("nivel_acompanamiento") or not nino.get("perfil_validado_at")
             ):
                 raise HTTPException(
                     status_code=422,
                     detail={
                         "mensaje": (
                             "Este caso no tiene evidencia clinica previa. "
-                            "El terapeuta debe validar el perfil clinico y el nivel TEA "
+                            "El terapeuta debe validar el perfil clinico y el nivel de acompañamiento "
                             "antes de generar el plan terapeutico."
                         )
                     },
                 )
 
-            nivel_tea_plan = nino.get("nivel_tea_validado") or _infer_nivel_tea(
-                nino.get("diagnostico"),
-                perfil_sensorial,
-            )
+            nivel_acompanamiento_plan = nino.get(
+                "nivel_acompanamiento"
+            ) or _infer_nivel_acompanamiento(perfil_sensorial)
             objetivos = nino.get("objetivos_intervencion") or _objetivos_desde_perfil(perfil_sensorial)
             nino["objetivos_intervencion"] = objetivos
-            nino["nivel_tea_validado"] = nivel_tea_plan
+            nino["nivel_acompanamiento"] = nivel_acompanamiento_plan
             
             # Un perfil se considera completo si tiene fecha de nacimiento, nivel cognitivo/apoyo,
             # y datos de perfil sensorial y objetivos cargados
@@ -4734,7 +4766,7 @@ def generar_plan_ia(
                     a["nombre"],
                 ),
             )[: min(3, len(catalogo))]
-            ejecucion = _modo_ejecucion_por_tea(nivel_tea_plan)
+            ejecucion = _modo_ejecucion_por_acompanamiento(nivel_acompanamiento_plan)
             for i, act in enumerate(acts, start=1):
                 cur.execute(
                     """
@@ -4785,7 +4817,7 @@ def generar_plan_ia(
         "estado_plan": "borrador",
         "requiere_revision_terapeuta": True,
         "perfil_clinico_obligatorio": perfil_obligatorio,
-        "nivel_tea_usado": nivel_tea_plan,
+        "nivel_acompanamiento_usado": nivel_acompanamiento_plan,
     }
 
 
@@ -4805,7 +4837,7 @@ def obtener_perfil_nino(
                     n.id, n.nombre, n.fecha_nacimiento, n.nivel_cognitivo,
                     n.diagnostico, n.perfil_sensorial, n.objetivos_intervencion,
                     n.estado_clinico, n.documento_diagnostico,
-                    n.nivel_tea_validado, n.perfil_validado_at,
+                    n.nivel_acompanamiento, n.perfil_validado_at,
                     n.terapeuta_id, n.tutor_id,
                     pt.id AS plan_activo_id,
                     pt.estado_plan AS plan_estado
@@ -4854,7 +4886,8 @@ def obtener_perfil_nino(
         "plan_activo_id": str(nino["plan_activo_id"]) if nino["plan_activo_id"] else None,
         "plan_estado": nino["plan_estado"],
         "estado_clinico": nino["estado_clinico"] or "pendiente_asignacion",
-        "nivel_tea_validado": nino["nivel_tea_validado"],
+        "nivel_acompanamiento": nino["nivel_acompanamiento"],
+        "nivel_acompanamiento_sugerido": _infer_nivel_acompanamiento(sensorial),
         "perfil_validado": nino["perfil_validado_at"] is not None,
         "perfil_validado_at": nino["perfil_validado_at"].isoformat() if nino["perfil_validado_at"] else None,
     }
@@ -5143,7 +5176,7 @@ def generar_reporte_terapeutico(
                     n.fecha_nacimiento,
                     n.nivel_cognitivo,
                     n.diagnostico,
-                    n.nivel_tea_validado
+                    n.nivel_acompanamiento
                 FROM ninos n
                 WHERE n.id = %s
                   AND n.terapeuta_id = %s
@@ -5323,7 +5356,7 @@ def generar_reporte_terapeutico(
             "edad": _calc_edad(nino["fecha_nacimiento"]),
             "nivel_cognitivo": nino["nivel_cognitivo"],
             "diagnostico": nino["diagnostico"],
-            "nivel_tea_validado": nino["nivel_tea_validado"],
+            "nivel_acompanamiento": nino["nivel_acompanamiento"],
         },
         "periodo": {
             "inicio": periodo_inicio.isoformat(),

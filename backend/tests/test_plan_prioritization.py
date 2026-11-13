@@ -1,25 +1,34 @@
-import pytest
 from app.application.usecases.ai_support_usecases import AISupportUseCases
 from app.domain.entities.support_level import SupportLevel
 
-def test_prioritization_scq_alto():
-    uc = AISupportUseCases()
-    # Sin model, fallback heuristico. SCQ = 15 (ALTO)
-    level = uc.estimate_support_level(edad=5, diagnostico_declarado="Ninguno", perfil_sensorial_score=2, contexto_familiar_score=2, scq_score=15)
-    assert level == SupportLevel.ALTO
 
-def test_prioritization_scq_moderado():
-    uc = AISupportUseCases()
-    level = uc.estimate_support_level(edad=5, diagnostico_declarado="Ninguno", perfil_sensorial_score=2, contexto_familiar_score=2, scq_score=12)
-    assert level == SupportLevel.MEDIO
+def _nivel(edad=5, perfil=2, contexto=2):
+    return AISupportUseCases().estimate_support_level(
+        edad=edad,
+        diagnostico_declarado="TDAH",
+        perfil_sensorial_score=perfil,
+        contexto_familiar_score=contexto,
+    )
 
-def test_prioritization_scq_bajo():
-    uc = AISupportUseCases()
-    level = uc.estimate_support_level(edad=5, diagnostico_declarado="Ninguno", perfil_sensorial_score=2, contexto_familiar_score=2, scq_score=5)
-    assert level == SupportLevel.BAJO
 
-def test_prioritization_critical_score_no_scq():
+def test_puntaje_critico_es_alto():
+    assert _nivel(perfil=10, contexto=6) == SupportLevel.ALTO
+
+
+def test_edad_menor_a_4_es_alto():
+    assert _nivel(edad=3) == SupportLevel.ALTO
+
+
+def test_puntaje_intermedio_es_medio():
+    assert _nivel(perfil=5, contexto=4) == SupportLevel.MEDIO
+
+
+def test_puntaje_bajo_es_bajo():
+    assert _nivel() == SupportLevel.BAJO
+
+
+def test_diagnostico_no_cambia_el_resultado():
     uc = AISupportUseCases()
-    # general score = 16 > 15
-    level = uc.estimate_support_level(edad=5, diagnostico_declarado="Ninguno", perfil_sensorial_score=10, contexto_familiar_score=6, scq_score=0)
-    assert level == SupportLevel.ALTO
+    a = uc.estimate_support_level(5, "TDAH", 5, 4)
+    b = uc.estimate_support_level(5, "", 5, 4)
+    assert a == b
