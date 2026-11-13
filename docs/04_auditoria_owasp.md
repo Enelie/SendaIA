@@ -1,5 +1,7 @@
 # Auditoría de Seguridad OWASP Top 10 — RimAI
 
+> **Nota histórica.** Este documento refleja el estado del proyecto antes de la migración TEA → TDAH (2026). Las referencias a TEA, SCQ y nivel TEA son históricas. RimAI es el nombre anterior de SENDAIA.
+
 **Fecha:** 11 de junio de 2026  
 **Alcance:** Código fuente del repositorio RimAI (backend FastAPI + cliente Flutter + Docker/CI)  
 **Metodología:** Revisión estática del código real. Hallazgos reportados **solo con evidencia verificable** en archivos concretos. No se incluyen vulnerabilidades inferidas sin soporte en el código.

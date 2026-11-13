@@ -1,5 +1,7 @@
 # Auditoría de Implementación OWASP — RimAI
 
+> **Nota histórica.** Este documento refleja el estado del proyecto antes de la migración TEA → TDAH (2026). Las referencias a TEA, SCQ y nivel TEA son históricas. RimAI es el nombre anterior de SENDAIA.
+
 **Fecha:** 11 de junio de 2026  
 **Referencia del plan:** [`docs/05_plan_owasp.md`](05_plan_owasp.md)  
 **Referencia auditoría original:** [`docs/04_auditoria_owasp.md`](04_auditoria_owasp.md)  

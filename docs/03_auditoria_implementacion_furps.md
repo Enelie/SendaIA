@@ -1,5 +1,9 @@
 # Auditoría de Implementación FURPS+ — RimAI
 
+> **Nota histórica.** Este documento refleja el estado del proyecto antes de la migración TEA → TDAH (2026). Las referencias a TEA, SCQ y nivel TEA son históricas. RimAI es el nombre anterior de SENDAIA.
+>
+> La mejora **MEJ-031** (eliminar el login legacy), que este documento registra como no implementada, quedó implementada en la capa 7 de esa migración (commit `99e026e`).
+
 **Fecha:** 11 de junio de 2026  
 **Referencia del plan:** [`docs/02_plan_furps.md`](02_plan_furps.md)  
 **Metodología:** Contraste estático del código actual contra los 41 ítems planificados (MEJ-001 a MEJ-041). Verificación complementaria: `pytest backend/tests` (28 passed) y `flutter test` (3 passed) según ejecución del 11/06/2026.

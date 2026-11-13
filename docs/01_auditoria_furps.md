@@ -1,5 +1,9 @@
 # Auditoría de Calidad FURPS+ — RimAI
 
+> **Nota histórica.** Este documento refleja el estado del proyecto antes de la migración TEA → TDAH (2026). Las referencias a TEA, SCQ y nivel TEA son históricas. RimAI es el nombre anterior de SENDAIA.
+>
+> El hallazgo **F-14** (pantalla de login legacy) quedó cerrado en la capa 7 de esa migración (commit `99e026e`), que eliminó `sendaia_app/lib/adapters/input/screens/login_screen.dart`.
+
 **Fecha:** 11 de junio de 2026  
 **Alcance:** Código fuente del repositorio RimAI (backend FastAPI + frontend Flutter, arquitectura hexagonal declarada)  
 **Metodología:** Revisión estática del código; no se ejecutaron pruebas de integración ni despliegue en este informe.

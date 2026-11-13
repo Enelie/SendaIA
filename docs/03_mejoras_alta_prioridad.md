@@ -1,5 +1,7 @@
 # Implementación — Mejoras Alta Prioridad (FURPS+)
 
+> **Nota histórica.** Este documento refleja el estado del proyecto antes de la migración TEA → TDAH (2026). Las referencias a TEA, SCQ y nivel TEA son históricas. RimAI es el nombre anterior de SENDAIA.
+
 **Fecha:** 11 de junio de 2026  
 **Referencia:** [`docs/02_plan_furps.md`](02_plan_furps.md) — Fase 1 (MEJ-001 a MEJ-012)
 

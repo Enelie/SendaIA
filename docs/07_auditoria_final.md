@@ -1,5 +1,7 @@
 # Auditoría Final Integral — RimAI
 
+> **Nota histórica.** Este documento refleja el estado del proyecto antes de la migración TEA → TDAH (2026). Las referencias a TEA, SCQ y nivel TEA son históricas. RimAI es el nombre anterior de SENDAIA.
+
 **Fecha:** 11 de junio de 2026  
 **Alcance:** Dictamen consolidado de calidad (FURPS+) y seguridad (OWASP Top 10)  
 **Fuentes:**

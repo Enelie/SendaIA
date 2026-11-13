@@ -1,5 +1,7 @@
 # Plan de Mejora FURPS+ — RimAI
 
+> **Nota histórica.** Este documento refleja el estado del proyecto antes de la migración TEA → TDAH (2026). Las referencias a TEA, SCQ y nivel TEA son históricas. RimAI es el nombre anterior de SENDAIA.
+
 **Fecha:** 11 de junio de 2026  
 **Fuente:** [`docs/01_auditoria_furps.md`](01_auditoria_furps.md) (auditoría estática del 11/06/2026)  
 **Objetivo:** Corregir debilidades identificadas sin romper flujos productivos actuales (`/api/dashboard/*`, `/api/ninos/*`, `/api/sesiones`, auth JWT, offline sync).
@@ -472,6 +474,8 @@ Ordenados de mayor a menor criticidad dentro de la fase.
 ---
 
 ### MEJ-031 — Eliminar pantalla login legacy
+
+> La mejora **MEJ-031** quedó implementada en la capa 7 de la migración TEA → TDAH (commit `99e026e`), que eliminó `sendaia_app/lib/adapters/input/screens/login_screen.dart`.
 
 | Campo | Detalle |
 |-------|---------|

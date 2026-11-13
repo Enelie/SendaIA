@@ -1,5 +1,7 @@
 # Plan de Remediación OWASP — RimAI
 
+> **Nota histórica.** Este documento refleja el estado del proyecto antes de la migración TEA → TDAH (2026). Las referencias a TEA, SCQ y nivel TEA son históricas. RimAI es el nombre anterior de SENDAIA.
+
 **Fecha:** 11 de junio de 2026  
 **Fuente:** [`docs/04_auditoria_owasp.md`](04_auditoria_owasp.md) (exclusivamente)  
 **Objetivo:** Corregir los hallazgos documentados sin romper el funcionamiento existente del sistema (API dashboard productiva, capa hexagonal `/api/v1/*`, app Flutter, Docker de desarrollo).
