@@ -31,7 +31,7 @@ CREATE TABLE padres_tutores (
     telefono VARCHAR(20)
 );
 
--- Ninos con TEA
+-- Ninos con TDAH
 CREATE TYPE nivel_cognitivo AS ENUM ('Bajo', 'Medio', 'Alto');
 
 CREATE TABLE ninos (

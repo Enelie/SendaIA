@@ -144,7 +144,7 @@ class _PlanBuilderScreenState extends ConsumerState<PlanBuilderScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Recomendaciones adaptativas de RimAI para **${widget.patientName}** basadas en los resultados y desempeño de su sesión previa. Revisa la justificación y elige las actividades que conformarán la nueva sesión.',
+                      'Recomendaciones adaptativas de SENDAIA para **${widget.patientName}** basadas en los resultados y desempeño de su sesión previa. Revisa la justificación y elige las actividades que conformarán la nueva sesión.',
                       style: GoogleFonts.plusJakartaSans(
                         color: const Color(0xFF6B4300),
                         fontSize: 13,

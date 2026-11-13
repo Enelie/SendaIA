@@ -30,8 +30,8 @@ from app.infrastructure.database import close_db_pool, init_db_pool
 from app.infrastructure.rate_limit import limiter
 
 app = FastAPI(
-    title="RimAI API (Hexagonal)",
-    description="Plataforma terapéutica adaptativa IA para niños con TEA",
+    title="SENDAIA API",
+    description="Plataforma adaptativa con IA para el apoyo parental en el aprendizaje de niños con TDAH",
     version="1.0.0",
 )
 
@@ -82,7 +82,7 @@ app.include_router(log_uso_router)
 
 @app.get("/")
 def root():
-    return {"status": "ok", "api": "RimAI", "version": "1.0.0"}
+    return {"status": "ok", "api": "SENDAIA", "version": "1.0.0"}
 
 
 @app.get("/health")

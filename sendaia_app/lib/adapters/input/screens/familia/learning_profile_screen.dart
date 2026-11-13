@@ -652,7 +652,7 @@ class _LearningProfileScreenState extends ConsumerState<LearningProfileScreen> {
           Icons.history_rounded,
           [
             _note(
-                'Datos de registros previos (hitos y perfil sensorial). Se conservan al editar.'),
+                'Datos de registros anteriores del perfil. Se conservan al editar.'),
             ...otrosHitos.map((e) => _row(e.key, e.value)),
             ...otrosSensorial.map((e) => _row(e.key, e.value)),
             if (aversivos.isNotEmpty) _row('Estímulos que le molestan', aversivos),
@@ -660,7 +660,7 @@ class _LearningProfileScreenState extends ConsumerState<LearningProfileScreen> {
         ),
       _section('Antecedentes y medicación', Icons.medical_information_outlined, [
         _note(
-            'Información aportada por la familia. SendaIA no realiza diagnósticos.'),
+            'Información aportada por la familia. SENDAIA no realiza diagnósticos.'),
         _row('Medicación actual',
             [if ((p.medicacionActual ?? '').isNotEmpty) p.medicacionActual!],
             empty: 'No registrada'),
@@ -914,7 +914,7 @@ class _LearningProfileScreenState extends ConsumerState<LearningProfileScreen> {
                       style: GoogleFonts.plusJakartaSans(
                           fontWeight: FontWeight.w800, color: _kText)),
                   subtitle: Text(
-                    'Confirmo el tratamiento de datos sensibles del nino conforme a la Ley N. 29733 y entiendo que SendaIA es una herramienta de apoyo al aprendizaje, no un diagnostico.',
+                    'Confirmo el tratamiento de datos sensibles del nino conforme a la Ley N. 29733 y entiendo que SENDAIA es una herramienta de apoyo al aprendizaje, no un diagnostico.',
                     style: GoogleFonts.plusJakartaSans(
                         fontSize: 12, color: _kSub, height: 1.35),
                   ),

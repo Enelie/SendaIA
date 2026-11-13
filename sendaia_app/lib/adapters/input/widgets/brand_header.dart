@@ -20,7 +20,7 @@ class RimAIBrandHeader extends StatelessWidget {
               ),
               const SizedBox(width: 10),
               Text(
-                'SendaIA',
+                'SENDAIA',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 52,
                   fontWeight: FontWeight.w900,

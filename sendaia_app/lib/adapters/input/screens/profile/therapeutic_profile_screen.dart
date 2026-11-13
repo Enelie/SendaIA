@@ -70,7 +70,7 @@ class _TherapeuticProfileScreenState
       backgroundColor: const Color(0xFFFFF8F2),
       extendBodyBehindAppBar: true,
       appBar: RimAITopBar(
-        title: "RimAI",
+        title: "SENDAIA",
         leadingIcon: Icons.all_inclusive,
         iconColor: const Color(0xFFA43714),
         trailingWidget: IconButton(
@@ -1074,7 +1074,7 @@ class _TherapeuticProfileScreenState
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'El motor clínico de RimAI ha preparado actividades personalizadas basadas en el progreso de la sesión anterior.',
+                            'El motor clínico de SENDAIA ha preparado actividades personalizadas basadas en el progreso de la sesión anterior.',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: const Color(0xFF6B4300),

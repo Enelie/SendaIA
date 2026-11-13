@@ -466,7 +466,7 @@ class _DetailSheetState extends ConsumerState<_DetailSheet> {
     final rutinas = p.rutinasRegulacion;
     final sWidgets = <Widget>[];
     if (sens.isNotEmpty) {
-      sWidgets.add(Text('Comportamientos Sensoriales:',
+      sWidgets.add(Text('Entorno de aprendizaje:',
           style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.bold, color: _kText)));
       sens.forEach((k, v) {
         sWidgets.add(Padding(
@@ -498,7 +498,7 @@ class _DetailSheetState extends ConsumerState<_DetailSheet> {
       ));
     }
     if (sens.isEmpty && aversivos.isEmpty && rutinas.isEmpty) {
-      sWidgets.add(Text('No se registraron datos sensoriales.',
+      sWidgets.add(Text('No se registraron datos del entorno de aprendizaje.',
           style: GoogleFonts.plusJakartaSans(fontSize: 13, color: _kSub)));
     }
 
@@ -666,9 +666,9 @@ class _DetailSheetState extends ConsumerState<_DetailSheet> {
                   children: hWidgets,
                 ),
 
-                // 3. Perfil Sensorial Familiar
+                // 3. Entorno de aprendizaje registrado por la familia (clave JSON 'sensorial')
                 _sectionCard(
-                  title: 'Perfil Sensorial Familiar',
+                  title: 'Entorno de aprendizaje (familia)',
                   icon: Icons.favorite_border_rounded,
                   children: sWidgets,
                 ),

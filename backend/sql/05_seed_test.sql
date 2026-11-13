@@ -31,7 +31,7 @@ INSERT INTO terapeutas (id, usuario_id, especialidad, colegiatura)
 VALUES (
     '22222222-0000-0000-0000-000000000001',
     '11111111-0000-0000-0000-000000000001',
-    'Terapia Ocupacional TEA',
+    'Terapia Ocupacional TDAH',
     'COL-12345'
 )
 ON CONFLICT (usuario_id) DO NOTHING;

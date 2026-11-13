@@ -98,7 +98,7 @@ class RimAIApp extends ConsumerWidget {
     final router = ref.watch(appRouterProvider);
 
     return MaterialApp.router(
-      title: 'RimAI — Plataforma Terapéutica',
+      title: 'SENDAIA — Apoyo parental en el aprendizaje',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
       theme: PMV2Theme.theme,

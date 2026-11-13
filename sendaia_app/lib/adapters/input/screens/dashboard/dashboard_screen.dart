@@ -32,7 +32,7 @@ class DashboardScreen extends ConsumerWidget {
       backgroundColor: _kBg,
       extendBodyBehindAppBar: true,
       appBar: RimAITopBar(
-        title: 'RimAI',
+        title: 'SENDAIA',
         leadingIcon: Icons.all_inclusive,
         iconColor: _kPrimary,
         trailingWidget: Row(

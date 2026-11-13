@@ -723,7 +723,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        Text('SendaIA',
+        Text('SENDAIA',
             style: GoogleFonts.plusJakartaSans(
                 color: _kText, fontSize: 18, fontWeight: FontWeight.bold)),
         const Spacer(),
@@ -1237,7 +1237,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                             ),
                           ),
                           subtitle: Text(
-                            'Confirmo el tratamiento de datos sensibles del nino conforme a la Ley N. 29733 y entiendo que SendaIA es una herramienta de apoyo al aprendizaje, no un diagnostico.',
+                            'Confirmo el tratamiento de datos sensibles del nino conforme a la Ley N. 29733 y entiendo que SENDAIA es una herramienta de apoyo al aprendizaje, no un diagnostico.',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: _kSub,

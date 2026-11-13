@@ -346,7 +346,7 @@ def _validar_consentimiento_sensible(req: RegistrarNinoRequest):
             detail={
                 "codigo": "aviso_no_diagnostico_requerido",
                 "mensaje": (
-                    "Debes confirmar que RimAI opera como herramienta de apoyo "
+                    "Debes confirmar que SENDAIA opera como herramienta de apoyo "
                     "clinico y no como diagnostico clinico."
                 ),
             },
@@ -727,7 +727,7 @@ def _build_reporte_pdf(reporte: Dict[str, Any]) -> bytes:
     tendencia = reporte["tendencias"]
     periodo = reporte["periodo"]
     lines = [
-        "RimAI - Reporte terapeutico",
+        "SENDAIA - Reporte terapeutico",
         f"Paciente: {nino['nombre']} | Edad: {nino['edad']} | Nivel TEA: {nino.get('nivel_tea_validado') or 'pendiente'}",
         f"Periodo: {periodo['inicio']} a {periodo['fin']}",
         f"Generado: {reporte['generado_at']}",
@@ -5544,7 +5544,7 @@ def obtener_cumplimiento_proteccion_datos(
         "marco_normativo": {
             "pais": "Peru",
             "ley": "Ley N. 29733 - Ley de Proteccion de Datos Personales",
-            "alcance": "Tratamiento de datos personales y datos sensibles del nino en RimAI.",
+            "alcance": "Tratamiento de datos personales y datos sensibles del nino en SENDAIA.",
         },
         "rol_usuario": current_user["role"],
         "nino_id": nino_id,
@@ -5565,7 +5565,7 @@ def obtener_cumplimiento_proteccion_datos(
             "confirmacion_requerida_para_sensibles": True,
         },
         "advertencia_clinica": (
-            "RimAI opera como herramienta de apoyo clinico y seguimiento terapeutico; "
+            "SENDAIA opera como herramienta de apoyo clinico y seguimiento terapeutico; "
             "no sustituye evaluacion profesional ni emite diagnostico clinico."
         ),
         "control_acceso": {

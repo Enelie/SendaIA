@@ -31,7 +31,7 @@ BEGIN
   RETURNING id INTO v_usuario_id;
 
   INSERT INTO terapeutas (id, usuario_id, especialidad, colegiatura)
-  VALUES (v_terapeuta_id, v_usuario_id, 'Terapia Ocupacional con enfoque TEA', 'TO-2021-4892')
+  VALUES (v_terapeuta_id, v_usuario_id, 'Terapia Ocupacional con enfoque TDAH', 'TO-2021-4892')
   ON CONFLICT (usuario_id) DO UPDATE SET
     especialidad = EXCLUDED.especialidad,
     colegiatura = EXCLUDED.colegiatura

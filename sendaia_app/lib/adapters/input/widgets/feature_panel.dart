@@ -72,7 +72,7 @@ class RimAIFeaturePanel extends StatelessWidget {
                   circleBg: const Color(0xFFD8F3FF),
                   icon: Icons.child_care,
                   iconColor: const Color.fromARGB(255, 80, 78, 99),
-                  label: 'Entornos sensoriales adaptativos',
+                  label: 'Rutinas y entornos que favorecen la atención',
                 ),
               ],
             ),
