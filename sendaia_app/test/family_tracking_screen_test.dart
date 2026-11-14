@@ -209,6 +209,11 @@ void main() {
     expect(find.text('Actividades realizadas'), findsOneWidget);
     expect(find.text('12 de 15'), findsOneWidget);
     expect(find.text('7 min'), findsOneWidget);
+    // La barra inferior siempre muestra las 5 secciones.
+    expect(find.text('Inicio'), findsOneWidget);
+    expect(find.text('Perfil'), findsOneWidget);
+    expect(find.text('Sugerencias'), findsOneWidget);
+    expect(find.text('Asistente IA'), findsOneWidget);
 
     await tester.scrollUntilVisible(find.text('Historial de actividades'), 200);
     expect(find.text('Lectura guiada'), findsNWidgets(2)); // historial + plan
@@ -242,8 +247,8 @@ void main() {
     await _pump(tester);
     expect(find.textContaining('No hay actividades registradas'),
         findsOneWidget);
-    expect(find.textContaining('se necesita un plan publicado'),
-        findsOneWidget);
+    expect(find.textContaining('actividad sugerida por la IA'), findsOneWidget);
+    expect(find.text('Ver actividades sugeridas'), findsOneWidget);
     expect(find.text('Sin registro'), findsNWidgets(2));
     expect(find.byType(BarChart), findsNothing);
   });

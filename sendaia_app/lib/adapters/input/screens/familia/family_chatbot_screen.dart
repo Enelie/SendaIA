@@ -51,7 +51,11 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
     _messages.add(
       ChatMessage(
         text:
-            '¡Hola! Soy tu asistente de IA.\n\nEstoy aquí para ayudarte a apoyar el aprendizaje de tu hijo con TDAH. Puedes consultarme sobre estrategias de estudio, organización de rutinas, concentración, motivación y actividades para realizar en casa.\n\n¿En qué te gustaría recibir ayuda hoy?',
+            '¡Hola! Soy tu asistente de orientación educativa.\n\nEstoy aquí para acompañarte en el aprendizaje de tu hijo con TDAH en casa. Puedes consultarme sobre:\n\n'
+            '• **Orientación académica:** Estrategias para lectura, escritura y razonamiento.\n'
+            '• **Comunicación y motivación:** Manejo de la frustración y refuerzo positivo del esfuerzo.\n'
+            '• **Organización del entorno y pausas:** Rutinas, espacio sin distractores y pausas de 15 min.\n\n'
+            '¿Sobre qué tema te gustaría conversar hoy?',
         isUser: false,
         timestamp: DateTime.now(),
       ),
@@ -116,114 +120,118 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
     final query = text.toLowerCase().trim();
     final nombre = perfil?.nombre ?? 'tu niño';
 
-    // 1. Actividades sugeridas para hoy
+    // 1. Actividades sugeridas para hoy y catálogo
     if (query.contains('actividad') ||
         query.contains('actividades') ||
         query.contains('sesion') ||
         query.contains('sesión') ||
-        query.contains('plan') ||
+        query.contains('sugerencia') ||
         query.contains('hoy')) {
-      if (plan == null || plan.actividades.isEmpty) {
-        return 'Todavía no tienes actividades sugeridas para $nombre. Pronto podrás recibir recomendaciones personalizadas para apoyar su aprendizaje; mientras tanto, puedes preguntarme por estrategias de estudio, organización o concentración.';
-      }
-
-      final buffer = StringBuffer();
-      buffer.writeln(
-          'Para el día de hoy de **$nombre** te sugiero acompañar estas actividades en casa:');
-      buffer.writeln();
-      for (var i = 0; i < plan.actividades.length; i++) {
-        final act = plan.actividades[i];
-        final tipo = act.requiereAcompanamiento
-            ? 'Acompañada (requiere tu apoyo)'
-            : 'Autónoma (el niño puede hacerla solo)';
-        buffer.writeln('${i + 1}. **${act.nombre}** (${act.nivelDificultad}):');
-        buffer.writeln('   - *Tipo:* $tipo');
-        buffer.writeln(
-            '   - *Instrucciones:* ${act.instrucciones ?? "Sin instrucciones específicas."}');
-        if (i < plan.actividades.length - 1) buffer.writeln();
-      }
-      buffer.writeln();
-      buffer.writeln(
-          '¿Tienes alguna duda sobre cómo acompañar alguna de ellas en casa?');
-      return buffer.toString();
+      return 'Para acompañar el aprendizaje de **$nombre** en casa hoy:\n\n'
+          '1. **Explora la pestaña "Sugerencias":** Encontrarás actividades educativas clasificadas en sus 5 áreas clave:\n'
+          '   • Comprensión lectora\n'
+          '   • Expresión escrita\n'
+          '   • Razonamiento lógico\n'
+          '   • Análisis y observación\n'
+          '   • Autonomía y organización\n\n'
+          '2. **Dos formas de realizarlas:**\n'
+          '   • **Hacer con temporizador guiado:** La app cronometra la sesión con pausas y registra los aciertos.\n'
+          '   • **Ya la completó en casa:** Si hicieron la tarea juntos en su cuaderno, presiona "Ya la completó en casa" para registrar el tiempo y tus observaciones.\n\n'
+          'Todas las actividades guardadas se reflejarán inmediatamente en su **Seguimiento familiar**.';
     }
 
-    // 2. Rutinas y organización del estudio
+    // 2. Orientación académica: lectura, escritura, razonamiento, tareas
+    if (query.contains('lectura') ||
+        query.contains('leer') ||
+        query.contains('comprension') ||
+        query.contains('comprensión') ||
+        query.contains('escrit') ||
+        query.contains('redacc') ||
+        query.contains('matemat') ||
+        query.contains('matemát') ||
+        query.contains('calcul') ||
+        query.contains('acad')) {
+      return 'Aquí tienes pautas de orientación académica para **$nombre**:\n\n'
+          '📖 **Comprensión lectora:**\n'
+          '• **Lectura compartida:** Lean por turnos (un párrafo tú, uno él). Esto reduce la fatiga visual.\n'
+          '• **Preguntas intermedias:** No esperes al final del texto. Pregunta: *"¿Qué crees que pasará ahora?"* al terminar cada escena.\n'
+          '• **Guía visual:** Usa una regla o marcapáginas bajo la línea para evitar saltarse renglones.\n\n'
+          '✍️ **Expresión escrita:**\n'
+          '• **Lluvia de ideas previa:** Antes de redactar, anoten palabras clave o dibujos en pósits de colores y ordénenlos juntos.\n'
+          '• **Frases cortas:** Anímalo a escribir una sola idea por oración.\n\n'
+          '🔢 **Razonamiento lógico:**\n'
+          '• **Apoyo concreto:** Utilicen objetos reales (fichas, monedas, bloques) antes de pasar al papel.\n'
+          '• **Subrayado con colores:** Marca de azul los datos numéricos y de rojo la pregunta del problema.';
+    }
+
+    // 3. Comunicación y motivación: Frustración, enojo, validación, refuerzo
+    if (query.contains('motiv') ||
+        query.contains('frustr') ||
+        query.contains('enoj') ||
+        query.contains('rabia') ||
+        query.contains('llor') ||
+        query.contains('cansa') ||
+        query.contains('bloque') ||
+        query.contains('autoestima') ||
+        query.contains('comunic')) {
+      return 'La frustración y el cansancio son muy frecuentes en niños con TDAH ante tareas prolongadas. Para acompañar a **$nombre**:\n\n'
+          '💬 **Validación emocional primero:**\n'
+          '• En vez de *"concéntrate"* o *"esto es fácil"*, dile: *"Veo que este ejercicio es difícil y te cansa; es normal sentirse frustrado. Respiremos un minuto juntos"*.\n\n'
+          '🌟 **Elogio al esfuerzo y no al resultado:**\n'
+          '• Destaca el proceso: *"Noté lo perseverante que fuiste al no rendirte con esa oración"* en vez de *"qué inteligente eres"*.\n\n'
+          '⏸️ **Pausa de reinicio activa:**\n'
+          '• Si notas señales de bloqueo o enojo, detén la tarea 3 minutos para tomar agua, estirarse o hacer 5 saltos. Volver después de moverse despeja la mente.\n\n'
+          '🎯 **Objetivos muy pequeños:**\n'
+          '• *"Hagamos solo los primeros 2 ejercicios y revisamos juntos"*. La meta cercana reduce la ansiedad de ver una página llena.';
+    }
+
+    // 4. Organización del entorno y pausas: rutinas, Pomodoro, espacio, distractores
     if (query.contains('rutina') ||
         query.contains('rutinas') ||
         query.contains('estudio') ||
         query.contains('tarea') ||
         query.contains('tareas') ||
         query.contains('horario') ||
-        query.contains('organiz')) {
-      final rutinas = _rutinasDeEstudio(perfil);
-      if (rutinas.isEmpty) {
-        return 'Aún no has registrado rutinas de estudio para $nombre.\n\n**Consejo general de organización:**\n1. **Horario fijo:** Mantener el mismo horario de estudio cada día.\n2. **Bloques cortos:** Dividir la tarea en tramos de 15 a 20 minutos con una pausa breve.\n3. **Instrucciones de una en una:** Dar una indicación y esperar a que la complete antes de la siguiente.\n\nPuedes registrar sus rutinas de estudio en el botón "Editar registro" de su tarjeta en el Inicio.';
-      }
+        query.contains('organiz') ||
+        query.contains('pomodoro') ||
+        query.contains('tiempo') ||
+        query.contains('espacio') ||
+        query.contains('distractor') ||
+        query.contains('distrae') ||
+        query.contains('ambiente')) {
+      final distractores = _listaDePerfil(perfil, 'distractores');
+      final distractoresTxt = distractores.isNotEmpty
+          ? '\n*(Tienes registrados como distractores de $nombre: ${distractores.join(', ').toLowerCase()}.)*'
+          : '';
 
-      final buffer = StringBuffer();
-      buffer.writeln(
-          'Aquí tienes las rutinas de estudio que has registrado para **$nombre**:');
-      for (final r in rutinas) {
-        buffer.writeln('• $r');
-      }
-      buffer.writeln();
-      buffer.writeln(
-          '¿Te gustaría que te sugiera cómo mantener estas rutinas en los días de más carga?');
-      return buffer.toString();
+      return 'Para optimizar la organización del entorno de aprendizaje de **$nombre**:\n\n'
+          '⏰ **Técnica de bloques cortos (Pomodoro adaptado):**\n'
+          '• **15 a 20 minutos de foco:** Los niños con TDAH rinden mucho mejor en periodos breves e intensos.\n'
+          '• **3 a 5 minutos de descanso activo:** Moverse, estirarse o hidratarse antes del siguiente bloque.\n'
+          '• **Temporizador visible:** Usa el reloj de la app o un cronómetro para que vea el paso del tiempo.\n\n'
+          '🧹 **Mesa libre de distractores:**$distractoresTxt\n'
+          '• Solo debe estar en la mesa el cuaderno y el lápiz del ejercicio en curso. Guarda juguetes, celular o libros de otra materia.\n\n'
+          '📋 **Checklist visual:**\n'
+          '• Escribe en una pizarra o papel las 3 tareas del día y permite que **$nombre** marque la casilla con un visto al terminar cada una.';
     }
 
-    // 3. Preguntas generales sobre TDAH
+    // 5. Preguntas generales sobre TDAH
     if (query.contains('que es') ||
         query.contains('qué es') ||
         query.contains('tdah') ||
         query.contains('deficit de atencion') ||
         query.contains('déficit de atención')) {
-      return 'El **Trastorno por Déficit de Atención e Hiperactividad (TDAH)** es una condición del neurodesarrollo que puede influir en la atención, la organización y el control de impulsos. Puede presentarse principalmente con dificultades de atención, con hiperactividad e impulsividad, o con una combinación de ambas.\n\n'
-          'Cada niño lo vive de manera distinta. En casa y en la escuela, las rutinas claras, las pausas y el reconocimiento de sus avances ayudan mucho a su aprendizaje.';
+      return 'El **Trastorno por Déficit de Atención e Hiperactividad (TDAH)** es una condición del neurodesarrollo que involucra las funciones ejecutivas del cerebro, como la atención sostenida, la memoria de trabajo y el control de impulsos.\n\n'
+          '**Clave pedagógica para la familia:**\n'
+          'No es falta de voluntad ni desobediencia: su cerebro busca estímulos y se agota más rápido con tareas repetitivas o largas. Con entornos ordenados, consignas breves de una en una y pausas activas, su capacidad de aprendizaje florece.';
     }
 
-    // 4. Concentración, impulsividad y organización
-    if (query.contains('concentr') ||
-        query.contains('impulsiv') ||
-        query.contains('hiperactiv') ||
-        query.contains('organizar')) {
-      return 'Para acompañar a un niño con TDAH cuando le cuesta concentrarse u organizarse, puede ayudar dividir las tareas en pasos breves, usar instrucciones claras de una en una y establecer rutinas previsibles. También conviene reconocer sus avances y acordar pausas cortas antes de que la atención caiga.\n\n'
-          'Si quieres, puedo sugerirte estrategias concretas para la hora de estudio en casa.';
-    }
-
-    // 5. Distractores y ambiente de estudio
-    if (query.contains('distractor') ||
-        query.contains('distrae') ||
-        query.contains('distraer') ||
-        query.contains('ruido') ||
-        query.contains('ruidos') ||
-        query.contains('sensorial')) {
-      final distractores = _listaDePerfil(perfil, 'distractores');
-      final conocidos = distractores.isNotEmpty
-          ? '\n\nPara **$nombre** tienes registrados estos distractores: ${distractores.join(', ').toLowerCase()}.'
-          : '';
-
-      return 'Los distractores reducen el tiempo en que el niño puede mantenerse enfocado.$conocidos\n\n'
-          '**Consejos prácticos:**\n'
-          '1. **Mesa preparada:** Deja solo lo necesario sobre la mesa y guarda el resto.\n'
-          '2. **Sin pantallas cerca:** Alejar televisión, teléfono y tablet del lugar de estudio.\n'
-          '3. **Pausa antes de empezar:** Un descanso corto antes de la tarea ayuda a entrar en foco.';
-    }
-
-    // 6. Fallback amigable
-    return 'Entiendo tu consulta. Soy tu asistente de apoyo para el aprendizaje de **$nombre**.\n\nPuedes preguntarme sobre:\n'
-        '• Estrategias de estudio (ej. "*¿Cómo organizar su tiempo de estudio?*").\n'
-        '• Concentración y motivación (ej. "*¿Cómo mejorar su concentración?*").\n'
-        '• Distractores y ambiente de estudio (ej. "*¿Qué suele distraerlo más?*").\n'
-        '• Información general sobre el TDAH (ej. "*¿Qué es el TDAH?*").\n\n'
-        '¿En qué te gustaría recibir ayuda hoy?';
-  }
-
-  List<String> _rutinasDeEstudio(PacientePerfil? perfil) {
-    final guardadas = _listaDePerfil(perfil, 'rutinas_estudio');
-    if (guardadas.isNotEmpty) return guardadas;
-    return perfil?.rutinasRegulacion ?? [];
+    // 6. Fallback estructurado en los 3 ejes
+    return 'Entiendo tu consulta. Como asistente de orientación para **$nombre**, puedo ayudarte en estos 3 ejes:\n\n'
+        '1. 📖 **Orientación académica:** Estrategias para lectura compartida, escritura paso a paso y razonamiento.\n'
+        '2. 💬 **Comunicación y motivación:** Cómo elogiar el esfuerzo, validar emociones y frenar la frustración.\n'
+        '3. ⏰ **Organización del entorno y pausas:** Rutinas de 15 min (Pomodoro adaptado), mesa sin distractores, checklists y pausas activas.\n\n'
+        '¿Sobre cuál de estos aspectos te gustaría que profundicemos?';
   }
 
   List<String> _listaDePerfil(PacientePerfil? perfil, String clave) {
@@ -234,10 +242,14 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final childQuery = _selectedNinoId == null
-        ? ''
-        : '?nino=${Uri.encodeQueryComponent(_selectedNinoId!)}';
     final familyDataAsync = ref.watch(familiaDashboardProvider);
+    final pacientes =
+        familyDataAsync.valueOrNull?.pacientes ?? const <PacienteDashboard>[];
+    final selectedNinoId = _selectedNinoId ??
+        (pacientes.isNotEmpty ? pacientes.first.id : null);
+    final childQuery = selectedNinoId == null
+        ? ''
+        : '?nino=${Uri.encodeQueryComponent(selectedNinoId)}';
 
     return Scaffold(
       backgroundColor: _kBg,
@@ -389,7 +401,10 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
             context.go('/familia/seguimiento$childQuery');
           }
           if (index == 3) {
-            context.go('/familia/sugerencias');
+            final ninoQuery = selectedNinoId == null
+                ? ''
+                : '?ninoId=${Uri.encodeQueryComponent(selectedNinoId)}';
+            context.go('/familia/sugerencias$ninoQuery');
           }
         },
         items: [
@@ -544,20 +559,20 @@ class _FamilyChatbotScreenState extends ConsumerState<FamilyChatbotScreen> {
       String ninoNombre, PacientePerfil? perfil, PlanData? plan) {
     final chips = [
       (
-        '📚 ¿Cómo organizar su estudio?',
-        '¿Cómo organizar el tiempo de estudio de $ninoNombre?'
+        '📖 Orientación académica',
+        '¿Cómo apoyar a $ninoNombre en lectura, escritura y tareas?'
       ),
       (
-        '🎯 ¿Cómo mejorar su concentración?',
-        '¿Cómo mejorar la concentración de $ninoNombre?'
+        '💬 Comunicación y motivación',
+        '¿Cómo motivar a $ninoNombre y manejar la frustración con las tareas?'
       ),
       (
-        '📘 ¿Qué es el TDAH y cómo influye?',
-        '¿Qué es el TDAH y cuáles son sus características principales?'
+        '⏰ Organización del entorno y pausas',
+        '¿Cómo organizar su tiempo y espacio de estudio con pausas de 15 min?'
       ),
       (
-        '💡 ¿Qué suele distraerlo más?',
-        '¿Qué suele distraer más a $ninoNombre?'
+        '🎯 Actividades para hoy',
+        '¿Qué actividades me sugieres realizar hoy con $ninoNombre en casa?'
       ),
     ];
 

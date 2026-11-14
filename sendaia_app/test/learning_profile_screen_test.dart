@@ -142,6 +142,11 @@ void main() {
     expect(find.textContaining('Conecta la consigna'), findsOneWidget);
     // Un solo niño: no se muestra el selector.
     expect(find.text('SELECCIONA UN NIÑO'), findsNothing);
+    // La barra inferior siempre muestra las 5 secciones.
+    expect(find.text('Inicio'), findsOneWidget);
+    expect(find.text('Seguimiento'), findsOneWidget);
+    expect(find.text('Sugerencias'), findsOneWidget);
+    expect(find.text('Asistente IA'), findsOneWidget);
   });
 
   testWidgets('con varios niños permite seleccionar uno', (tester) async {

@@ -158,6 +158,7 @@ class PacienteDashboard {
   final int edad;
   final String nivelCognitivo;
   final String? diagnostico;
+  final String? terapeutaId;
   final String? planActivo;
   final String? planActivoId;
   final String? planEstado;
@@ -174,11 +175,6 @@ class PacienteDashboard {
   final List<String> rutinasRegulacion;
   final Map<String, dynamic> documentosClinicos;
   final String? medicacionActual;
-  final bool requiereScq;
-  final bool scqCompletado;
-  final bool scqAutorizadoEnvio;
-  final int? scqPuntaje;
-  final String? scqNivel;
 
   PacienteDashboard({
     required this.id,
@@ -187,6 +183,7 @@ class PacienteDashboard {
     required this.edad,
     required this.nivelCognitivo,
     this.diagnostico,
+    this.terapeutaId,
     this.planActivo,
     this.planActivoId,
     this.planEstado,
@@ -203,11 +200,6 @@ class PacienteDashboard {
     this.rutinasRegulacion = const [],
     this.documentosClinicos = const {},
     this.medicacionActual,
-    this.requiereScq = false,
-    this.scqCompletado = false,
-    this.scqAutorizadoEnvio = false,
-    this.scqPuntaje,
-    this.scqNivel,
   });
 
   factory PacienteDashboard.fromJson(dynamic raw) {
@@ -219,6 +211,7 @@ class PacienteDashboard {
       edad: (j['edad'] as num?)?.toInt() ?? 0,
       nivelCognitivo: j['nivel_cognitivo']?.toString() ?? '',
       diagnostico: j['diagnostico']?.toString(),
+      terapeutaId: j['terapeuta_id']?.toString(),
       planActivo: j['plan_activo']?.toString(),
       planActivoId: j['plan_activo_id']?.toString(),
       planEstado: j['plan_estado']?.toString(),
@@ -237,11 +230,6 @@ class PacienteDashboard {
       rutinasRegulacion: _stringList(j['rutinas_regulacion']),
       documentosClinicos: _optionalMap(j['documentos_clinicos']),
       medicacionActual: j['medicacion_actual']?.toString(),
-      requiereScq: j['requiere_scq'] == true,
-      scqCompletado: j['scq_completado'] == true,
-      scqAutorizadoEnvio: j['scq_autorizado_envio'] == true,
-      scqPuntaje: (j['scq_puntaje'] as num?)?.toInt(),
-      scqNivel: j['scq_nivel']?.toString(),
     );
   }
 }

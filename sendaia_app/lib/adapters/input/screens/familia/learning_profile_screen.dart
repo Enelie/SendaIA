@@ -465,6 +465,12 @@ class _LearningProfileScreenState extends ConsumerState<LearningProfileScreen> {
                   context.go('/familia/seguimiento$childQuery');
                 }
                 if (index == 3) {
+                  final ninoQuery = _selectedId == null
+                      ? ''
+                      : '?ninoId=${Uri.encodeQueryComponent(_selectedId!)}';
+                  context.go('/familia/sugerencias$ninoQuery');
+                }
+                if (index == 4) {
                   context.go('/familia/chatbot$childQuery');
                 }
               },
@@ -473,6 +479,8 @@ class _LearningProfileScreenState extends ConsumerState<LearningProfileScreen> {
                 BottomNavItem(icon: Icons.school_rounded, label: 'Perfil'),
                 BottomNavItem(
                     icon: Icons.insights_rounded, label: 'Seguimiento'),
+                BottomNavItem(
+                    icon: Icons.auto_awesome_outlined, label: 'Sugerencias'),
                 BottomNavItem(icon: Icons.forum_rounded, label: 'Asistente IA'),
               ],
             ),

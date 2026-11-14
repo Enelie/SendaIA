@@ -43,6 +43,7 @@ from app.infrastructure.authorization import (
 )
 from app.infrastructure.config import evaluar_alertas_en_resumen
 from app.infrastructure.database import get_connection
+from app.infrastructure.text_encoding import reparar_estructura, reparar_texto
 
 router = APIRouter(tags=["dashboard"])
 
@@ -502,13 +503,13 @@ def _build_perfil_familiar(
         triaje["scq"] = triaje_actual["scq"]
 
     return {
-        "hitos": req.hitos or {},
-        "sensorial": req.sensorial or {},
-        "intereses": req.intereses or [],
-        "estimulosAversivos": req.estimulos_aversivos or {},
-        "rutinas_regulacion": req.rutinas_regulacion or [],
+        "hitos": reparar_estructura(req.hitos or {}),
+        "sensorial": reparar_estructura(req.sensorial or {}),
+        "intereses": reparar_estructura(req.intereses or []),
+        "estimulosAversivos": reparar_estructura(req.estimulos_aversivos or {}),
+        "rutinas_regulacion": reparar_estructura(req.rutinas_regulacion or []),
         "documentos_clinicos": documentos,
-        "medicacion_actual": req.medicacion_actual,
+        "medicacion_actual": reparar_texto(req.medicacion_actual or "") or None,
         "umbralSensorial": perfil_actual.get("umbralSensorial", "medio"),
         "preferenciasEntorno": perfil_actual.get("preferenciasEntorno", []),
         "triaje": triaje,
@@ -2174,6 +2175,7 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
                     n.nivel_cognitivo, n.estado_clinico, n.diagnostico,
                     n.perfil_sensorial, n.objetivos_intervencion,
                     n.nivel_tea_validado,
+                    n.terapeuta_id,
                     pt.id AS plan_activo_id,
                     pt.nombre AS plan_activo,
                     pt.estado_plan AS plan_estado
@@ -2307,9 +2309,7 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
     total_alertas = 0
     for n in ninos:
         nino_id = str(n["id"])
-        perfil = n["perfil_sensorial"] or {}
-        triaje = _triaje_from_perfil(perfil)
-        scq = triaje.get("scq", {}) if isinstance(triaje.get("scq"), dict) else {}
+        perfil = reparar_estructura(n["perfil_sensorial"] or {})
         progreso_row = progreso_por_nino.get(nino_id, {})
         ultima_row = ultima_sesion_por_nino.get(nino_id)
 
@@ -2324,8 +2324,6 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
         }
 
         alertas = []
-        if triaje.get("requiere_scq", False) and not triaje.get("scq_completado", False):
-            alertas.append("SCQ pendiente para completar la informacion clinica.")
         if not n["plan_activo_id"]:
             alertas.append("Aun no hay una recomendacion publicada para la familia.")
         elif progreso["sesiones_completadas"] == 0:
@@ -2344,14 +2342,15 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
         total_alertas += len(alertas)
         pacientes_list.append({
             "id": nino_id,
-            "nombre": n["nombre"],
+            "nombre": reparar_texto(n["nombre"] or ""),
             "fecha_nacimiento": n["fecha_nacimiento"].isoformat()
             if n["fecha_nacimiento"]
             else None,
             "edad": _calc_edad(n["fecha_nacimiento"]),
             "nivel_cognitivo": n["nivel_cognitivo"] or "Sin datos",
-            "diagnostico": n["diagnostico"],
+            "diagnostico": reparar_texto(n["diagnostico"] or "") or None,
             "estado_clinico": n["estado_clinico"] or "pendiente_asignacion",
+            "terapeuta_id": str(n["terapeuta_id"]) if n["terapeuta_id"] else None,
             "plan_activo": n["plan_activo"],
             "plan_activo_id": str(n["plan_activo_id"]) if n["plan_activo_id"] else None,
             "plan_estado": n["plan_estado"],
@@ -2375,11 +2374,6 @@ def resumen_familia(current_user: dict = Depends(get_current_user)):
             "rutinas_regulacion": perfil.get("rutinas_regulacion", []),
             "documentos_clinicos": perfil.get("documentos_clinicos", {}),
             "medicacion_actual": perfil.get("medicacion_actual"),
-            "requiere_scq": triaje.get("requiere_scq", False),
-            "scq_completado": triaje.get("scq_completado", False),
-            "scq_autorizado_envio": triaje.get("autorizado_envio_terapeuta", False),
-            "scq_puntaje": scq.get("puntaje_total"),
-            "scq_nivel": scq.get("nivel_indicio"),
         })
 
     return {
@@ -2492,10 +2486,10 @@ def registrar_nino(
                 RETURNING id
                 """,
                 (
-                    req.nombre,
+                    reparar_texto(req.nombre),
                     req.fecha_nacimiento,
                     req.nivel_cognitivo,
-                    req.diagnostico,
+                    reparar_texto(req.diagnostico or "") or None,
                     Json(perfil_sensorial),
                     tutor["id"],
                 ),
@@ -2591,10 +2585,10 @@ def actualizar_nino_familia(
                 RETURNING id
                 """,
                 (
-                    req.nombre,
+                    reparar_texto(req.nombre),
                     req.fecha_nacimiento,
                     req.nivel_cognitivo,
-                    req.diagnostico,
+                    reparar_texto(req.diagnostico or "") or None,
                     Json(perfil_sensorial),
                     nino_id,
                 ),
@@ -3442,7 +3436,7 @@ def validar_nivel_tea(
             )
             nino = cur.fetchone()
             if not nino:
-                raise HTTPException(status_code=404, detail="NiÃ±o no encontrado para este terapeuta")
+                raise HTTPException(status_code=404, detail="Niño no encontrado para este terapeuta")
 
             cur.execute(
                 """
@@ -4523,8 +4517,10 @@ def actualizar_perfil_clinico(
     campos_permitidos = campos_perfil_editables_por_rol(current_user.get("role", ""))
     if current_user.get("role") == "admin":
         campos_permitidos = campos_perfil_editables_por_rol("terapeuta")
-    updates = {k: v for k, v in datos.items() if k in campos_permitidos}
-    observaciones = datos.get("observaciones_clinicas")
+    updates = reparar_estructura({
+        k: v for k, v in datos.items() if k in campos_permitidos
+    })
+    observaciones = reparar_texto(datos.get("observaciones_clinicas") or "") or None
 
     if observaciones:
         perfil = updates.get("perfil_sensorial") or {}
@@ -4548,7 +4544,7 @@ def actualizar_perfil_clinico(
             if not nino_row:
                 raise HTTPException(status_code=404, detail="Niño no encontrado")
             
-            existing_perfil = nino_row["perfil_sensorial"] or {}
+            existing_perfil = reparar_estructura(nino_row["perfil_sensorial"] or {})
             
             if "perfil_sensorial" in updates:
                 merged_perfil = dict(existing_perfil)
@@ -4867,14 +4863,14 @@ def obtener_perfil_nino(
             elif current_user["role"] != "admin":
                 raise HTTPException(status_code=403, detail="Acceso denegado")
 
-    sensorial = nino["perfil_sensorial"] or {}
+    sensorial = reparar_estructura(nino["perfil_sensorial"] or {})
     triaje = _triaje_from_perfil(sensorial)
     scq = triaje.get("scq", {}) if isinstance(triaje.get("scq"), dict) else {}
     return {
         "id": str(nino["id"]),
-        "nombre": nino["nombre"],
+        "nombre": reparar_texto(nino["nombre"] or ""),
         "edad": _calc_edad(nino["fecha_nacimiento"]),
-        "diagnostico": nino["diagnostico"],
+        "diagnostico": reparar_texto(nino["diagnostico"] or "") or None,
         "nivel_cognitivo": nino["nivel_cognitivo"] or "Medio",
         "perfil_sensorial": sensorial,
         "objetivos_intervencion": nino["objetivos_intervencion"] or [],

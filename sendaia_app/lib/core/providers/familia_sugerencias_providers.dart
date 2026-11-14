@@ -18,6 +18,7 @@ class SugerenciaActividad {
   final String actividadId;
   final String nombre;
   final String tipo;
+  final String areaEducativa;
   final String nivelDificultad;
   final int duracionSegundos;
   final int? duracionMinutos;
@@ -31,6 +32,7 @@ class SugerenciaActividad {
     required this.actividadId,
     required this.nombre,
     required this.tipo,
+    this.areaEducativa = 'General',
     required this.nivelDificultad,
     required this.duracionSegundos,
     required this.duracionMinutos,
@@ -42,10 +44,16 @@ class SugerenciaActividad {
   });
 
   factory SugerenciaActividad.fromJson(Map<String, dynamic> json) {
+    final tipo = json['tipo']?.toString() ?? '';
+    final areaRaw = json['area_educativa']?.toString();
+    final areaEducativa = (areaRaw != null && areaRaw.isNotEmpty)
+        ? areaRaw
+        : (tipo.isNotEmpty ? tipo : 'General');
     return SugerenciaActividad(
       actividadId: json['actividad_id']?.toString() ?? '',
       nombre: json['nombre']?.toString() ?? '',
-      tipo: json['tipo']?.toString() ?? '',
+      tipo: tipo,
+      areaEducativa: areaEducativa,
       nivelDificultad: json['nivel_dificultad']?.toString() ?? '',
       duracionSegundos: (json['duracion_segundos'] as num?)?.toInt() ?? 0,
       duracionMinutos: (json['duracion_minutos'] as num?)?.toInt(),
@@ -116,7 +124,32 @@ Future<SugerenciasFamilia> _cargar(Dio dio, String ninoId) async {
 }
 
 /// Sugerencias personalizadas de actividades para el panel del padre.
-final sugerenciasFamiliaProvider = FutureProvider.autoDispose
-    .family<SugerenciasFamilia, String>((ref, ninoId) async {
+///
+/// Sin `autoDispose`: al cambiar de pestaña y volver, las sugerencias ya
+/// cargadas siguen visibles sin tener que volver a pulsar el botón.
+final sugerenciasFamiliaProvider =
+    FutureProvider.family<SugerenciasFamilia, String>((ref, ninoId) async {
   return _cargar(ref.read(dioProvider), ninoId);
 });
+
+/// Actividades para las que la familia ya pidió un plan de acción.
+///
+/// Vive fuera de la pantalla para que la marca de "solicitada" sobreviva a la
+/// navegación entre pestañas mientras dure la sesión de la app.
+class SugerenciasSolicitadasNotifier extends StateNotifier<Set<String>> {
+  SugerenciasSolicitadasNotifier() : super(const {});
+
+  void marcar(String actividadId) {
+    if (actividadId.isEmpty || state.contains(actividadId)) return;
+    state = {...state, actividadId};
+  }
+
+  void desmarcar(String actividadId) {
+    if (!state.contains(actividadId)) return;
+    state = {...state}..remove(actividadId);
+  }
+}
+
+final sugerenciasSolicitadasProvider =
+    StateNotifierProvider<SugerenciasSolicitadasNotifier, Set<String>>(
+        (ref) => SugerenciasSolicitadasNotifier());

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:uuid/uuid.dart';
 
 import 'package:rimai_app/adapters/input/widgets/rimai_bottom_nav.dart';
 import 'package:rimai_app/core/providers/dashboard_providers.dart';
 import 'package:rimai_app/core/providers/familia_sugerencias_providers.dart';
+import 'package:rimai_app/core/providers/seguimiento_providers.dart';
 
 // ── Design tokens (misma paleta del panel familiar) ───────────────────────────
 const _kP = Color(0xFF5CBF95);
@@ -28,20 +30,91 @@ class SugerenciasActividadesScreen extends ConsumerStatefulWidget {
 class _SugerenciasActividadesState
     extends ConsumerState<SugerenciasActividadesScreen> {
   String? _ninoId;
-  final Set<String> _solicitados = <String>{};
+  String _filtroArea = 'Todas';
+  final Set<String> _registradas = <String>{};
+  final Uuid _uuid = const Uuid();
+
+  static const _areasDisponibles = [
+    'Todas',
+    'Comprensión lectora',
+    'Expresión escrita',
+    'Razonamiento lógico',
+    'Análisis',
+    'Autonomía',
+    'Pausas y autorregulación',
+  ];
 
   void _seleccionar(String id) {
     if (_ninoId == id) return;
-    setState(() => _ninoId = id);
+    setState(() {
+      _ninoId = id;
+      _filtroArea = 'Todas';
+    });
   }
 
-  void _solicitar(String id) {
-    setState(() => _solicitados.add(id));
+  void _abrirActividadGuiada(PacienteDashboard p, SugerenciaActividad s) {
+    context.push(
+      '/familia/sugerencias/actividad?nino=${Uri.encodeQueryComponent(p.id)}',
+      extra: s,
+    );
+  }
+
+  Future<void> _registrarEnCasa(PacienteDashboard p, SugerenciaActividad s) async {
+    final data = await showModalBottomSheet<_RegistroRapidoData>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _RegistroRapidoSheet(nombre: s.nombre),
+    );
+    if (data == null || !mounted) return;
+
+    try {
+      await ref.read(seguimientoServiceProvider).registrarActividadFamiliar(
+            ninoId: p.id,
+            actividadId: s.actividadId,
+            modalidad: 'casa_sin_app',
+            nivelAyudaRequerido: data.nivelAyuda,
+            observaciones: data.observaciones,
+            clientEventId: _uuid.v4(),
+          );
+      if (!mounted) return;
+      setState(() => _registradas.add(s.actividadId));
+      ref.invalidate(seguimientoFamiliarProvider);
+      ref.invalidate(familiaDashboardProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Actividad registrada. Ya aparece en Seguimiento y en Inicio.',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: _kP,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.toString().replaceFirst('Exception: ', ''),
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
+          ),
+          backgroundColor: const Color(0xFFB45309),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(familiaDashboardProvider);
+    final pacientes =
+        async.valueOrNull?.pacientes ?? const <PacienteDashboard>[];
+    final selectedId = _resolverNinoId(pacientes);
+    final childQuery = selectedId == null
+        ? ''
+        : '?nino=${Uri.encodeQueryComponent(selectedId)}';
     return Scaffold(
       backgroundColor: _kBg,
       body: async.when(
@@ -51,19 +124,36 @@ class _SugerenciasActividadesState
         data: (data) => _contenido(data.pacientes),
       ),
       bottomNavigationBar: RimAIBottomNav(
-        currentIndex: 1,
+        currentIndex: 3,
         onTap: (index) {
-          if (index == 0) context.go('/familia/dashboard');
-          if (index == 2) context.go('/familia/chatbot');
+          if (index == 0) context.go('/familia/dashboard$childQuery');
+          if (index == 1) context.go('/familia/perfil$childQuery');
+          if (index == 2) context.go('/familia/seguimiento$childQuery');
+          if (index == 4) context.go('/familia/chatbot$childQuery');
         },
         items: [
           BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
+          BottomNavItem(icon: Icons.school_rounded, label: 'Perfil'),
+          BottomNavItem(icon: Icons.insights_rounded, label: 'Seguimiento'),
           BottomNavItem(
               icon: Icons.auto_awesome_outlined, label: 'Sugerencias'),
           BottomNavItem(icon: Icons.forum_rounded, label: 'Asistente IA'),
         ],
       ),
     );
+  }
+
+  /// Niño activo: el elegido en pantalla, el que llega por URL o el primero.
+  String? _resolverNinoId(List<PacienteDashboard> pacientes) {
+    if (pacientes.isEmpty) return null;
+    if (_ninoId != null && pacientes.any((p) => p.id == _ninoId)) {
+      return _ninoId;
+    }
+    if (widget.ninoId != null &&
+        pacientes.any((p) => p.id == widget.ninoId)) {
+      return widget.ninoId;
+    }
+    return pacientes.first.id;
   }
 
   Widget _errorPanel(String msg) => SafeArea(
@@ -151,12 +241,7 @@ class _SugerenciasActividadesState
       );
     }
 
-    final id = _ninoId ??
-        (widget.ninoId != null &&
-                pacientes.any((p) => p.id == widget.ninoId)
-            ? widget.ninoId
-            : null) ??
-        pacientes.first.id;
+    final id = _resolverNinoId(pacientes)!;
     final nino = pacientes.firstWhere((p) => p.id == id);
 
     return SafeArea(
@@ -392,82 +477,34 @@ class _SugerenciasActividadesState
         ),
       );
 
-  // ── Zona de sugerencias (botón + resultados) ───────────────────────────────
+  // ── Zona de sugerencias (carga automática + resultados) ────────────────────
   Widget _zonaSugerencias(PacienteDashboard p) {
-    final solicitado = _solicitados.contains(p.id);
+    // El provider no es autoDispose: mientras dure la sesión de la app, al
+    // cambiar de pestaña las sugerencias ya cargadas se muestran de inmediato
+    // sin volver a pulsar ningún botón.
+    final async = ref.watch(sugerenciasFamiliaProvider(p.id));
 
-    if (!solicitado) {
-      return _card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.auto_awesome_outlined,
-                    size: 18, color: Color(0xFF7B6CF6)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '¿Qué actividades necesita ${p.nombre}?',
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: _kText),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'La IA analizará su perfil de aprendizaje (intereses, '
-              'dificultades, atención y entorno) y te mostrará las '
-              'actividades recomendadas, por qué se eligieron y consejos '
-              'para realizarlas en casa.',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12.5,
-                  height: 1.4,
-                  fontWeight: FontWeight.w500,
-                  color: _kSub),
-            ),
-            const SizedBox(height: 14),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.auto_awesome, size: 17),
-                label: const Text('Brindarme las sugerencias con IA'),
-                onPressed: () => _solicitar(p.id),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7B6CF6),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14)),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final resultados = ref.watch(sugerenciasFamiliaProvider(p.id));
-    return resultados.when(
+    return async.when(
       loading: () => _card(
         child: Column(
           children: [
             const SizedBox(height: 6),
             const CircularProgressIndicator(color: Color(0xFF7B6CF6)),
             const SizedBox(height: 14),
-            Text('Analizando el perfil de ${p.nombre} con IA...',
+            Text('Preparando las actividades para casa de ${p.nombre}...',
+                textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: _kText)),
             const SizedBox(height: 4),
-            Text('Seleccionando las actividades más adecuadas.',
-                style: GoogleFonts.plusJakartaSans(
-                    fontSize: 12, fontWeight: FontWeight.w500, color: _kSub)),
+            Text(
+              'Adaptando comprensión lectora, expresión escrita, razonamiento '
+              'lógico, análisis, autonomía y pausas a su perfil y atención.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12, fontWeight: FontWeight.w500, color: _kSub),
+            ),
           ],
         ),
       ),
@@ -494,29 +531,15 @@ class _SugerenciasActividadesState
                 style: GoogleFonts.plusJakartaSans(
                     fontSize: 12, height: 1.35, color: _kSub)),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                ElevatedButton(
-                  onPressed: () =>
-                      ref.invalidate(sugerenciasFamiliaProvider(p.id)),
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: _kP,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 10)),
-                  child: const Text('Reintentar'),
-                ),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: () =>
-                      setState(() => _solicitados.remove(p.id)),
-                  child: Text('Volver',
-                      style: GoogleFonts.plusJakartaSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: _kSub)),
-                ),
-              ],
+            ElevatedButton(
+              onPressed: () =>
+                  ref.invalidate(sugerenciasFamiliaProvider(p.id)),
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: _kP,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 18, vertical: 10)),
+              child: const Text('Reintentar'),
             ),
           ],
         ),
@@ -526,6 +549,12 @@ class _SugerenciasActividadesState
   }
 
   Widget _resultados(PacienteDashboard p, SugerenciasFamilia datos) {
+    final filtradas = _filtroArea == 'Todas'
+        ? datos.sugerencias
+        : datos.sugerencias
+            .where((s) => s.areaEducativa == _filtroArea || s.tipo == _filtroArea)
+            .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -540,21 +569,29 @@ class _SugerenciasActividadesState
                   const SizedBox(width: 7),
                   Expanded(
                     child: Text(
-                      'Según su perfil, estas son las actividades '
-                      'recomendadas',
+                      'Actividades recomendadas para casa',
                       style: GoogleFonts.plusJakartaSans(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w800,
                           color: _kText),
                     ),
                   ),
+                  TextButton.icon(
+                    onPressed: () =>
+                        ref.invalidate(sugerenciasFamiliaProvider(p.id)),
+                    icon: const Icon(Icons.refresh, size: 14),
+                    label: const Text('Recalcular'),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: const Size(0, 30),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 6),
               Text(
-                'Nivel sugerido: ${datos.dificultadEstimada} · '
-                'Datos del perfil usados: '
-                '${datos.camposPerfilUsados.length}',
+                'Nivel pedagógico: ${datos.dificultadEstimada} · '
+                'Confianza adaptativa: ${(datos.confianzaModelo * 100).toInt()}%',
                 style: GoogleFonts.plusJakartaSans(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
@@ -563,8 +600,7 @@ class _SugerenciasActividadesState
               if (!datos.perfilCompleto) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Completa el perfil de aprendizaje para personalizar '
-                  'aún más estas sugerencias.',
+                  'Completa el perfil de aprendizaje para personalizar aún más estas sugerencias.',
                   style: GoogleFonts.plusJakartaSans(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w700,
@@ -574,65 +610,90 @@ class _SugerenciasActividadesState
             ],
           ),
         ),
+        const SizedBox(height: 16),
+        Text(
+          'Actividades para casa',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: _kText,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Elige una actividad para acompañar a ${p.nombre}. Puedes guiarla con el celular al lado o registrarla si la hicieron como tarea en casa.',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: _kSub,
+            height: 1.35,
+          ),
+        ),
         const SizedBox(height: 12),
-        if (datos.sugerencias.isEmpty)
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: _areasDisponibles.map((area) {
+              final sel = _filtroArea == area;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(area),
+                  selected: sel,
+                  onSelected: (_) => setState(() => _filtroArea = area),
+                  selectedColor: _kA.withValues(alpha: 0.55),
+                  backgroundColor: Colors.white,
+                  side: BorderSide(color: _kBdr.withValues(alpha: 0.9)),
+                  labelStyle: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: sel ? _kText : _kSub,
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (filtradas.isEmpty)
           _card(
-            child: Text(
-              'Aún no hay actividades disponibles para sugerir.',
-              style: GoogleFonts.plusJakartaSans(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: _kSub),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text(
+                  'No hay actividades en "$_filtroArea". Elige "Todas" para ver más opciones.',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                      color: _kSub),
+                ),
+              ),
             ),
           )
         else
-          ...datos.sugerencias.map((s) => Padding(
+          ...filtradas.map((s) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
-                child: _tarjetaSugerencia(s),
+                child: _tarjetaSugerencia(p, s),
               )),
-        _card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (datos.nota.isNotEmpty)
-                Text(
-                  datos.nota,
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 10.5,
-                      height: 1.35,
-                      fontWeight: FontWeight.w500,
-                      color: _kSub),
-                ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: () => ref
-                          .invalidate(sugerenciasFamiliaProvider(p.id)),
-                      icon: const Icon(Icons.refresh, size: 15),
-                      label: Text('Calcular de nuevo',
-                          style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700)),
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF4A52D9),
-                        alignment: Alignment.centerLeft,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: const Size(0, 34),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        if (datos.nota.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          _card(
+            child: Text(
+              datos.nota,
+              style: GoogleFonts.plusJakartaSans(
+                  fontSize: 10.5,
+                  height: 1.35,
+                  fontWeight: FontWeight.w500,
+                  color: _kSub),
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
 
-  Widget _tarjetaSugerencia(SugerenciaActividad s) {
+  Widget _tarjetaSugerencia(PacienteDashboard p, SugerenciaActividad s) {
+    final registrada = _registradas.contains(s.actividadId);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -644,33 +705,39 @@ class _SugerenciasActividadesState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            spacing: 6,
+            runSpacing: 4,
             children: [
-              Expanded(
-                child: Text(
-                  s.nombre,
-                  style: GoogleFonts.plusJakartaSans(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: _kText),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: _kA.withValues(alpha: 0.35),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ),
-              _chip(s.nivelDificultad, _kA.withValues(alpha: 0.4)),
-              if (s.duracionSegundos > 0) ...[
-                const SizedBox(width: 6),
-                _chip('${(s.duracionSegundos / 60).round()} min',
-                    _kP.withValues(alpha: 0.2)),
-              ],
-            ],
-          ),
-          if (s.tipo.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(s.tipo,
-                style: GoogleFonts.plusJakartaSans(
+                child: Text(
+                  s.areaEducativa,
+                  style: GoogleFonts.plusJakartaSans(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: const Color(0xFF5A738E))),
-          ],
+                    color: const Color(0xFF4A52D9),
+                  ),
+                ),
+              ),
+              _chip(s.nivelDificultad, _kP.withValues(alpha: 0.2)),
+              if (s.duracionSegundos > 0)
+                _chip('${(s.duracionSegundos / 60).round()} min',
+                    Colors.grey.shade100),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            s.nombre,
+            style: GoogleFonts.plusJakartaSans(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w800,
+                color: _kText),
+          ),
           if (s.instrucciones != null && s.instrucciones!.trim().isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(s.instrucciones!,
@@ -748,6 +815,66 @@ class _SugerenciasActividadesState
                     fontWeight: FontWeight.w600,
                     color: _kSub)),
           ],
+          const SizedBox(height: 12),
+          if (registrada)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: _kP.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded,
+                      size: 18, color: _kP),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Registrada. Ya aparece en Seguimiento y en Inicio.',
+                      style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: _kText),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _abrirActividadGuiada(p, s),
+                icon: const Icon(Icons.play_circle_outline, size: 18),
+                label: const Text('Hacer con la app'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7B6CF6),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _registrarEnCasa(p, s),
+                icon: const Icon(Icons.home_outlined, size: 18),
+                label: const Text('Ya la hizo en casa'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _kText,
+                  side: BorderSide(color: _kBdr.withValues(alpha: 0.9)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -763,4 +890,187 @@ class _SugerenciasActividadesState
             style: GoogleFonts.plusJakartaSans(
                 fontSize: 10.5, fontWeight: FontWeight.w700, color: _kText)),
       );
+}
+
+class _RegistroRapidoData {
+  final int nivelAyuda;
+  final String? observaciones;
+
+  const _RegistroRapidoData({
+    required this.nivelAyuda,
+    this.observaciones,
+  });
+}
+
+/// Hoja para registrar en segundos una actividad hecha en casa sin la app.
+class _RegistroRapidoSheet extends StatefulWidget {
+  final String nombre;
+  const _RegistroRapidoSheet({required this.nombre});
+
+  @override
+  State<_RegistroRapidoSheet> createState() => _RegistroRapidoSheetState();
+}
+
+class _RegistroRapidoSheetState extends State<_RegistroRapidoSheet> {
+  int _nivel = 0;
+  final TextEditingController _obs = TextEditingController();
+
+  @override
+  void dispose() {
+    _obs.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottom = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Center(
+                  child: Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: _kBdr,
+                      borderRadius: BorderRadius.circular(100),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text('¿Ya hicieron esta actividad?',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: _kText)),
+                const SizedBox(height: 4),
+                Text(
+                  'Registra "${widget.nombre}" como hecha en casa. No hace '
+                  'falta que el terapeuta haya publicado un plan.',
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12.5,
+                      height: 1.4,
+                      fontWeight: FontWeight.w500,
+                      color: _kSub),
+                ),
+                const SizedBox(height: 16),
+                Text('¿NECESITÓ AYUDA?',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        letterSpacing: 0.6,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF5A738E))),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _nivelChip(0, 'Sin ayuda'),
+                    _nivelChip(1, 'Un poco'),
+                    _nivelChip(2, 'Bastante'),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text('OBSERVACIONES (OPCIONAL)',
+                    style: GoogleFonts.plusJakartaSans(
+                        fontSize: 10.5,
+                        letterSpacing: 0.6,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF5A738E))),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _obs,
+                  maxLines: 3,
+                  maxLength: 500,
+                  style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13, fontWeight: FontWeight.w500),
+                  decoration: InputDecoration(
+                    hintText: 'Ej. Le costó empezar, pero terminó contento.',
+                    hintStyle: GoogleFonts.plusJakartaSans(
+                        fontSize: 12.5, color: _kSub),
+                    filled: true,
+                    fillColor: _kBg,
+                    counterText: '',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: _kBdr),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: _kBdr),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: _kP, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pop(
+                      _RegistroRapidoData(
+                        nivelAyuda: _nivel,
+                        observaciones: _obs.text,
+                      ),
+                    ),
+                    icon: const Icon(Icons.check_rounded, size: 18),
+                    label: const Text('Registrar en casa'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _kP,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ),
+                Center(
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('Cancelar',
+                        style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: _kSub)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _nivelChip(int valor, String texto) {
+    final sel = _nivel == valor;
+    return ChoiceChip(
+      label: Text(texto),
+      selected: sel,
+      onSelected: (_) => setState(() => _nivel = valor),
+      selectedColor: _kA.withValues(alpha: 0.55),
+      backgroundColor: _kBg,
+      side: BorderSide(color: sel ? _kA : _kBdr),
+      labelStyle: GoogleFonts.plusJakartaSans(
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+        color: _kText,
+      ),
+    );
+  }
 }

@@ -1,15 +1,17 @@
-"""Seguimiento familiar: historial de actividades realizadas en casa (solo lectura).
+"""Seguimiento familiar: historial de actividades realizadas en casa.
 
-Lee las tablas existentes (sesiones, resultados_actividad, planes_terapeuticos);
-no escribe ni modifica el esquema. El registro de actividades sigue usando
-POST /api/sesiones.
+Lee `sesiones`/`resultados_actividad` (actividades de un plan clinico) y
+`registros_actividad_familia` (actividades sugeridas que la familia realiza
+por su cuenta, sin plan publicado). El GET mezcla ambas fuentes; el POST
+registra una actividad familiar sin depender de un plan del terapeuta.
 """
-from datetime import date, timedelta
-from typing import Any, Dict, Optional
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, Literal, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from psycopg2.extras import RealDictCursor
+from pydantic import BaseModel, Field
 
 from app.infrastructure.database import get_connection
 from .dependencies import get_current_user
@@ -28,6 +30,20 @@ DURACION_SQL = (
 )
 
 
+class ActividadRealizadaRequest(BaseModel):
+    """Registro de una actividad sugerida realizada por la familia."""
+
+    actividad_id: str
+    modalidad: Literal["guiada_app", "casa_sin_app"] = "casa_sin_app"
+    estado: Literal["completada", "interrumpida"] = "completada"
+    duracion_segundos: Optional[int] = Field(default=None, ge=0, le=86400)
+    aciertos: Optional[int] = Field(default=None, ge=0, le=100000)
+    repeticiones: Optional[int] = Field(default=None, ge=0, le=100000)
+    nivel_ayuda_requerido: int = Field(default=0, ge=0, le=2)
+    observaciones: Optional[str] = Field(default=None, max_length=1000)
+    client_event_id: Optional[str] = None
+
+
 def _parse_fecha(value: Optional[str], campo: str) -> Optional[date]:
     if not value:
         return None
@@ -39,6 +55,17 @@ def _parse_fecha(value: Optional[str], campo: str) -> Optional[date]:
 
 def _iso(value: Any) -> Optional[str]:
     return value.isoformat() if value is not None else None
+
+
+def _str_or_none(value: Any) -> Optional[str]:
+    return str(value) if value is not None else None
+
+
+def _uuid(value: str, campo: str) -> str:
+    try:
+        return str(UUID(value))
+    except (ValueError, TypeError, AttributeError):
+        raise HTTPException(status_code=422, detail=f"'{campo}' debe ser un UUID valido")
 
 
 def _nino_del_tutor(cur, nino_id: str, current_user: Dict[str, Any]) -> Dict[str, Any]:
@@ -84,77 +111,157 @@ def obtener_seguimiento_familiar(
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             nino = _nino_del_tutor(cur, nino_id, current_user)
 
-            # Actividades efectivamente registradas (una fila por resultado).
+            # Actividades efectivamente registradas: plan clínico + familia.
             cur.execute(
                 f"""
                 SELECT
-                    ra.id AS registro_id,
-                    s.id AS sesion_id,
-                    s.plan_id,
-                    s.fecha_inicio,
-                    s.estado::text AS estado,
-                    s.origen_registro,
-                    a.id AS actividad_id,
-                    a.nombre AS actividad_nombre,
-                    a.tipo AS actividad_tipo,
-                    a.duracion_estimada,
-                    {DURACION_SQL} AS duracion_segundos,
-                    ra.aciertos,
-                    ra.repeticiones,
-                    ra.nivel_ayuda_requerido,
-                    ra.nivel_dificultad_usado::text AS nivel_dificultad_usado,
-                    NULLIF(TRIM(COALESCE(ra.observaciones, '')), '') AS observaciones
-                FROM sesiones s
-                JOIN resultados_actividad ra ON ra.sesion_id = s.id
-                JOIN actividades a ON a.id = ra.actividad_id
-                WHERE s.nino_id = %s
-                  AND s.fecha_inicio >= %s
-                  AND s.fecha_inicio < %s
-                ORDER BY s.fecha_inicio DESC, ra.timestamp DESC
+                    t.registro_id,
+                    t.sesion_id,
+                    t.plan_id,
+                    t.fecha_inicio,
+                    t.estado,
+                    t.origen_registro,
+                    t.modalidad,
+                    t.actividad_id,
+                    t.actividad_nombre,
+                    t.actividad_tipo,
+                    t.duracion_estimada,
+                    t.duracion_segundos,
+                    t.aciertos,
+                    t.repeticiones,
+                    t.nivel_ayuda_requerido,
+                    t.nivel_dificultad_usado,
+                    t.observaciones
+                FROM (
+                    SELECT
+                        ra.id AS registro_id,
+                        s.id AS sesion_id,
+                        s.plan_id,
+                        s.fecha_inicio,
+                        s.estado::text AS estado,
+                        s.origen_registro,
+                        NULL::text AS modalidad,
+                        a.id AS actividad_id,
+                        a.nombre AS actividad_nombre,
+                        a.tipo AS actividad_tipo,
+                        a.duracion_estimada,
+                        {DURACION_SQL} AS duracion_segundos,
+                        ra.aciertos,
+                        ra.repeticiones,
+                        ra.nivel_ayuda_requerido,
+                        ra.nivel_dificultad_usado::text AS nivel_dificultad_usado,
+                        NULLIF(TRIM(COALESCE(ra.observaciones, '')), '') AS observaciones
+                    FROM sesiones s
+                    JOIN resultados_actividad ra ON ra.sesion_id = s.id
+                    JOIN actividades a ON a.id = ra.actividad_id
+                    WHERE s.nino_id = %s
+                      AND s.fecha_inicio >= %s
+                      AND s.fecha_inicio < %s
+                    UNION ALL
+                    SELECT
+                        rf.id AS registro_id,
+                        NULL::uuid AS sesion_id,
+                        NULL::uuid AS plan_id,
+                        rf.fecha AS fecha_inicio,
+                        rf.estado,
+                        CASE rf.modalidad
+                            WHEN 'guiada_app' THEN 'familia_app'
+                            ELSE 'familia_sin_app'
+                        END AS origen_registro,
+                        rf.modalidad,
+                        a.id AS actividad_id,
+                        a.nombre AS actividad_nombre,
+                        a.tipo AS actividad_tipo,
+                        a.duracion_estimada,
+                        rf.duracion_segundos,
+                        rf.aciertos,
+                        rf.repeticiones,
+                        rf.nivel_ayuda_requerido,
+                        NULL::text AS nivel_dificultad_usado,
+                        NULLIF(TRIM(COALESCE(rf.observaciones, '')), '') AS observaciones
+                    FROM registros_actividad_familia rf
+                    JOIN actividades a ON a.id = rf.actividad_id
+                    WHERE rf.nino_id = %s
+                      AND rf.fecha >= %s
+                      AND rf.fecha < %s
+                ) t
+                ORDER BY t.fecha_inicio DESC, t.registro_id DESC
                 LIMIT %s
                 """,
-                (nino_id, *rango, MAX_REGISTROS),
+                (nino_id, *rango, nino_id, *rango, MAX_REGISTROS),
             )
             registros = cur.fetchall()
 
-            # Totales y conteo semanal calculados sobre todo el rango (no
-            # dependen del límite de filas del historial).
+            # Totales y conteo semanal sobre todo el rango (no dependen del
+            # límite de filas del historial), sumando ambas fuentes.
             cur.execute(
                 f"""
                 SELECT
-                    COUNT(ra.id) AS actividades_completadas,
-                    COUNT(DISTINCT date_trunc('day', s.fecha_inicio)) AS dias_con_actividad,
-                    SUM({DURACION_SQL}) AS segundos_totales,
-                    COUNT({DURACION_SQL}) AS registros_con_duracion,
-                    SUM(ra.aciertos) AS aciertos,
-                    SUM(ra.repeticiones) AS intentos
-                FROM sesiones s
-                JOIN resultados_actividad ra ON ra.sesion_id = s.id
-                WHERE s.nino_id = %s
-                  AND s.estado = 'completada'
-                  AND s.fecha_inicio >= %s
-                  AND s.fecha_inicio < %s
+                    COUNT(*) AS actividades_completadas,
+                    COUNT(DISTINCT date_trunc('day', t.fecha_inicio)) AS dias_con_actividad,
+                    SUM(t.duracion_segundos) AS segundos_totales,
+                    COUNT(t.duracion_segundos) AS registros_con_duracion,
+                    SUM(t.aciertos) AS aciertos,
+                    SUM(t.repeticiones) AS intentos
+                FROM (
+                    SELECT
+                        s.fecha_inicio,
+                        {DURACION_SQL} AS duracion_segundos,
+                        ra.aciertos,
+                        ra.repeticiones
+                    FROM sesiones s
+                    JOIN resultados_actividad ra ON ra.sesion_id = s.id
+                    WHERE s.nino_id = %s
+                      AND s.estado = 'completada'
+                      AND s.fecha_inicio >= %s
+                      AND s.fecha_inicio < %s
+                    UNION ALL
+                    SELECT
+                        rf.fecha AS fecha_inicio,
+                        rf.duracion_segundos,
+                        rf.aciertos,
+                        rf.repeticiones
+                    FROM registros_actividad_familia rf
+                    WHERE rf.nino_id = %s
+                      AND rf.estado = 'completada'
+                      AND rf.fecha >= %s
+                      AND rf.fecha < %s
+                ) t
                 """,
-                (nino_id, *rango),
+                (nino_id, *rango, nino_id, *rango),
             )
             totales = cur.fetchone() or {}
 
             cur.execute(
                 f"""
                 SELECT
-                    date_trunc('week', s.fecha_inicio)::date AS semana,
-                    COUNT(ra.id) AS actividades,
-                    SUM({DURACION_SQL}) AS segundos
-                FROM sesiones s
-                JOIN resultados_actividad ra ON ra.sesion_id = s.id
-                WHERE s.nino_id = %s
-                  AND s.estado = 'completada'
-                  AND s.fecha_inicio >= %s
-                  AND s.fecha_inicio < %s
+                    date_trunc('week', t.fecha_inicio)::date AS semana,
+                    COUNT(*) AS actividades,
+                    SUM(t.duracion_segundos) AS segundos
+                FROM (
+                    SELECT
+                        s.fecha_inicio,
+                        {DURACION_SQL} AS duracion_segundos
+                    FROM sesiones s
+                    JOIN resultados_actividad ra ON ra.sesion_id = s.id
+                    WHERE s.nino_id = %s
+                      AND s.estado = 'completada'
+                      AND s.fecha_inicio >= %s
+                      AND s.fecha_inicio < %s
+                    UNION ALL
+                    SELECT
+                        rf.fecha AS fecha_inicio,
+                        rf.duracion_segundos
+                    FROM registros_actividad_familia rf
+                    WHERE rf.nino_id = %s
+                      AND rf.estado = 'completada'
+                      AND rf.fecha >= %s
+                      AND rf.fecha < %s
+                ) t
                 GROUP BY semana
                 ORDER BY semana
                 """,
-                (nino_id, *rango),
+                (nino_id, *rango, nino_id, *rango),
             )
             semanas = cur.fetchall()
 
@@ -214,11 +321,12 @@ def obtener_seguimiento_familiar(
         "registros": [
             {
                 "id": str(r["registro_id"]),
-                "sesion_id": str(r["sesion_id"]),
-                "plan_id": str(r["plan_id"]),
+                "sesion_id": _str_or_none(r["sesion_id"]),
+                "plan_id": _str_or_none(r["plan_id"]),
                 "fecha": _iso(r["fecha_inicio"]),
                 "estado": r["estado"],
                 "origen_registro": r["origen_registro"],
+                "modalidad": r.get("modalidad"),
                 "actividad_id": str(r["actividad_id"]),
                 "actividad_nombre": r["actividad_nombre"],
                 "actividad_tipo": r["actividad_tipo"],
@@ -245,4 +353,84 @@ def obtener_seguimiento_familiar(
             }
             for r in recomendadas
         ],
+    }
+
+
+@router.post("/api/familia/ninos/{nino_id}/actividades-realizadas")
+def registrar_actividad_familiar(
+    nino_id: str,
+    payload: ActividadRealizadaRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """Registra una actividad sugerida realizada en casa, sin plan clínico.
+
+    `client_event_id` hace el registro idempotente: reintentar con el mismo
+    valor no duplica la actividad (útil si la app perdió la respuesta).
+    """
+    actividad_id = _uuid(payload.actividad_id, "actividad_id")
+    client_event_id = (
+        _uuid(payload.client_event_id, "client_event_id")
+        if payload.client_event_id
+        else None
+    )
+
+    with get_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            _nino_del_tutor(cur, nino_id, current_user)
+
+            if client_event_id:
+                cur.execute(
+                    """
+                    SELECT id, fecha
+                    FROM registros_actividad_familia
+                    WHERE client_event_id = %s AND nino_id = %s
+                    """,
+                    (client_event_id, nino_id),
+                )
+                existente = cur.fetchone()
+                if existente:
+                    return {
+                        "ok": True,
+                        "duplicado": True,
+                        "registro_id": str(existente["id"]),
+                        "fecha": _iso(existente["fecha"]),
+                    }
+
+            cur.execute(
+                "SELECT id FROM actividades WHERE id = %s AND activo = TRUE",
+                (actividad_id,),
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="Actividad no encontrada")
+
+            cur.execute(
+                """
+                INSERT INTO registros_actividad_familia (
+                    nino_id, actividad_id, fecha, estado, modalidad,
+                    duracion_segundos, aciertos, repeticiones,
+                    nivel_ayuda_requerido, observaciones, client_event_id
+                )
+                VALUES (%s, %s, NOW(), %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id, fecha
+                """,
+                (
+                    nino_id,
+                    actividad_id,
+                    payload.estado,
+                    payload.modalidad,
+                    payload.duracion_segundos,
+                    payload.aciertos,
+                    payload.repeticiones,
+                    payload.nivel_ayuda_requerido,
+                    (payload.observaciones or "").strip() or None,
+                    client_event_id,
+                ),
+            )
+            creado = cur.fetchone()
+
+    return {
+        "ok": True,
+        "duplicado": False,
+        "registro_id": str(creado["id"]),
+        "fecha": _iso(creado["fecha"]),
     }

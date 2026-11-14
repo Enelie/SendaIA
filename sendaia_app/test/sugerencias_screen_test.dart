@@ -73,20 +73,24 @@ void main() {
 
     expect(find.textContaining('Este es el perfil de Ana Torres'),
         findsOneWidget);
+    // La barra inferior siempre muestra las 5 secciones.
+    expect(find.text('Inicio'), findsOneWidget);
+    expect(find.text('Perfil'), findsOneWidget);
+    expect(find.text('Seguimiento'), findsOneWidget);
+    expect(find.text('Asistente IA'), findsOneWidget);
+
+    // Las sugerencias se cargan solas y se mantienen al cambiar de niño.
+    expect(find.text('Contacto visual 5 seg'), findsOneWidget);
 
     await tester.tap(find.text('Luis Ramos'));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
     expect(find.textContaining('Este es el perfil de Luis Ramos'),
         findsOneWidget);
 
-    await tester.ensureVisible(
-        find.text('Brindarme las sugerencias con IA'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Brindarme las sugerencias con IA'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
-
+    // No hace falta volver a pulsar un botón para ver las sugerencias.
     expect(find.text('Contacto visual 5 seg'), findsOneWidget);
+    expect(find.text('Brindarme las sugerencias con IA'), findsNothing);
     expect(find.textContaining('Dificultad Medio'), findsOneWidget);
     expect(find.textContaining('Hazlo en un lugar tranquilo.'),
         findsOneWidget);

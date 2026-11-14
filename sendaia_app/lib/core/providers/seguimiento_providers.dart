@@ -29,6 +29,7 @@ class RegistroActividad {
   final int? intentos;
   final int? nivelAyuda;
   final String? observaciones;
+  final String? modalidad;
 
   const RegistroActividad({
     required this.id,
@@ -43,6 +44,7 @@ class RegistroActividad {
     this.intentos,
     this.nivelAyuda,
     this.observaciones,
+    this.modalidad,
   });
 
   factory RegistroActividad.fromJson(Map<String, dynamic> j) =>
@@ -59,7 +61,11 @@ class RegistroActividad {
         intentos: (j['intentos'] as num?)?.toInt(),
         nivelAyuda: (j['nivel_ayuda_requerido'] as num?)?.toInt(),
         observaciones: j['observaciones']?.toString(),
+        modalidad: j['modalidad']?.toString(),
       );
+
+  bool get esActividadFamiliar => modalidad != null;
+  bool get fueGuiadaPorApp => modalidad == 'guiada_app';
 }
 
 class SemanaActividad {
@@ -182,6 +188,44 @@ class SeguimientoService {
       final detail = e.response?.data is Map ? e.response?.data['detail'] : null;
       throw Exception(detail?.toString() ??
           'No se pudo cargar el seguimiento. Revisa tu conexión.');
+    }
+  }
+
+  /// Registra una actividad sugerida realizada por la familia, sin necesidad
+  /// de que exista un plan publicado por el terapeuta.
+  Future<void> registrarActividadFamiliar({
+    required String ninoId,
+    required String actividadId,
+    required String modalidad,
+    int? duracionSegundos,
+    int? aciertos,
+    int? repeticiones,
+    int nivelAyudaRequerido = 0,
+    String? observaciones,
+    String? clientEventId,
+    String estado = 'completada',
+  }) async {
+    try {
+      await _dio.post(
+        '/api/familia/ninos/$ninoId/actividades-realizadas',
+        data: {
+          'actividad_id': actividadId,
+          'modalidad': modalidad,
+          'estado': estado,
+          if (duracionSegundos != null) 'duracion_segundos': duracionSegundos,
+          if (aciertos != null) 'aciertos': aciertos,
+          if (repeticiones != null) 'repeticiones': repeticiones,
+          'nivel_ayuda_requerido': nivelAyudaRequerido,
+          if (observaciones != null && observaciones.trim().isNotEmpty)
+            'observaciones': observaciones.trim(),
+          if (clientEventId != null) 'client_event_id': clientEventId,
+        },
+      );
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) throw const SessionExpiredException();
+      final detail = e.response?.data is Map ? e.response?.data['detail'] : null;
+      throw Exception(detail?.toString() ??
+          'No se pudo registrar la actividad. Revisa tu conexión.');
     }
   }
 }

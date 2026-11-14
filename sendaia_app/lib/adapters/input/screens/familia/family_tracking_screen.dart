@@ -149,6 +149,12 @@ class _FamilyTrackingScreenState extends ConsumerState<FamilyTrackingScreen> {
             context.go('/familia/perfil$childQuery');
           }
           if (index == 3) {
+            final ninoQuery = _selectedId == null
+                ? ''
+                : '?ninoId=${Uri.encodeQueryComponent(_selectedId!)}';
+            context.go('/familia/sugerencias$ninoQuery');
+          }
+          if (index == 4) {
             context.go('/familia/chatbot$childQuery');
           }
         },
@@ -156,6 +162,8 @@ class _FamilyTrackingScreenState extends ConsumerState<FamilyTrackingScreen> {
           BottomNavItem(icon: Icons.home_rounded, label: 'Inicio'),
           BottomNavItem(icon: Icons.school_rounded, label: 'Perfil'),
           BottomNavItem(icon: Icons.insights_rounded, label: 'Seguimiento'),
+          BottomNavItem(
+              icon: Icons.auto_awesome_outlined, label: 'Sugerencias'),
           BottomNavItem(icon: Icons.forum_rounded, label: 'Asistente IA'),
         ],
       ),
@@ -232,9 +240,26 @@ class _FamilyTrackingScreenState extends ConsumerState<FamilyTrackingScreen> {
           const SizedBox(height: 16),
           if (sinRegistros)
             _card(
-              child: _vacio(
-                  'No hay actividades registradas en los últimos ${_periodo.label}.',
-                  'Cuando completes una actividad recomendada y guardes sus resultados, aparecerá aquí.'),
+              child: Column(
+                children: [
+                  _vacio(
+                      'No hay actividades registradas en los últimos ${_periodo.label}.',
+                      'Puedes realizar una actividad sugerida por la IA con temporizador guiado o registrar una tarea que tu hijo completó en casa.'),
+                  const SizedBox(height: 8),
+                  FilledButton.icon(
+                    onPressed: () => context
+                        .go('/familia/sugerencias?ninoId=${nino.id}'),
+                    icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                    label: const Text('Ver actividades sugeridas'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _kA,
+                      foregroundColor: _kText,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
+                ],
+              ),
             )
           else if (ancho)
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -509,12 +534,29 @@ class _FamilyTrackingScreenState extends ConsumerState<FamilyTrackingScreen> {
             Text('Estado de las actividades publicadas para la familia.',
                 style: GoogleFonts.plusJakartaSans(fontSize: 12, color: _kSub)),
             const SizedBox(height: 12),
-            if (s.recomendadas.isEmpty)
+            if (s.recomendadas.isEmpty) ...[
               Text(
-                'Aún no hay actividades publicadas para ${nino.nombre}. Para registrar una actividad se necesita un plan publicado.',
+                'Explora las actividades sugeridas por la IA adaptadas al perfil de ${nino.nombre}. Puedes realizarlas con temporizador guiado o registrar una completada en casa.',
                 style: GoogleFonts.plusJakartaSans(
                     fontSize: 13, color: _kSub, height: 1.4),
-              )
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => context
+                      .go('/familia/sugerencias?ninoId=${nino.id}'),
+                  icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+                  label: const Text('Ir a actividades sugeridas'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _kA,
+                    foregroundColor: _kText,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+            ]
             else ...[
               ...s.recomendadas.map((r) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),

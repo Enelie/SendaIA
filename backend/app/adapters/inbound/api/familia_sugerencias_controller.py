@@ -9,6 +9,7 @@ from psycopg2.extras import RealDictCursor
 from app.ai.sugerencias_familia import construir_sugerencias
 from app.infrastructure.authorization import autorizar_acceso_nino
 from app.infrastructure.database import get_connection
+from app.infrastructure.text_encoding import reparar_estructura
 from .dependencies import get_current_user
 
 router = APIRouter(prefix="/api/familia", tags=["familia"])
@@ -19,7 +20,7 @@ ROLES_TUTOR = ("padre_tutor", "tutor", "padre")
 @router.get("/ninos/{nino_id}/sugerencias")
 def obtener_sugerencias(
     nino_id: str,
-    limite: int = Query(default=3, ge=1, le=5),
+    limite: int = Query(default=8, ge=1, le=20),
     current_user: Dict[str, Any] = Depends(get_current_user),
 ):
     """Sugerencias de actividades a partir del perfil educativo del nino.
@@ -58,4 +59,8 @@ def obtener_sugerencias(
             )
             catalogo = cur.fetchall()
 
-    return construir_sugerencias(dict(nino), [dict(a) for a in catalogo], limite)
+    return construir_sugerencias(
+        reparar_estructura(dict(nino)),
+        [reparar_estructura(dict(a)) for a in catalogo],
+        limite,
+    )

@@ -28,6 +28,7 @@ import 'package:rimai_app/adapters/input/screens/familia/family_plan_screen.dart
 import 'package:rimai_app/adapters/input/screens/familia/ejecucion_actividad_screen.dart';
 import 'package:rimai_app/adapters/input/screens/familia/family_chatbot_screen.dart';
 import 'package:rimai_app/adapters/input/screens/familia/sugerencias_actividades_screen.dart';
+import 'package:rimai_app/adapters/input/screens/familia/actividad_sugerida_screen.dart';
 import 'package:rimai_app/adapters/input/screens/familia/learning_profile_screen.dart';
 import 'package:rimai_app/adapters/input/screens/familia/family_tracking_screen.dart';
 import 'package:rimai_app/adapters/input/screens/documents/clinical_document_viewer_screen.dart';
@@ -38,9 +39,7 @@ import 'package:rimai_app/adapters/output/sqlite_db_repository.dart';
 import 'package:rimai_app/adapters/output/api_sync_repository.dart';
 import 'package:rimai_app/core/constants/api_constants.dart';
 import 'package:rimai_app/core/providers/auth_providers.dart';
-import 'package:rimai_app/adapters/input/screens/admision/scq_form_screen.dart';
-import 'package:rimai_app/adapters/input/screens/admision/scq_result_screen.dart';
-import 'package:rimai_app/domain/entities/scq_result.dart';
+import 'package:rimai_app/core/providers/familia_sugerencias_providers.dart';
 
 /// Proveedor del enrutador principal de la aplicación, conectado al estado de Riverpod.
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -362,8 +361,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/familia/sugerencias',
         builder: (context, state) => SugerenciasActividadesScreen(
-          ninoId: state.uri.queryParameters['ninoId'],
+          ninoId: state.uri.queryParameters['ninoId'] ??
+              state.uri.queryParameters['nino'],
         ),
+      ),
+      GoRoute(
+        path: '/familia/sugerencias/actividad',
+        builder: (context, state) {
+          final ninoId = state.uri.queryParameters['nino'] ?? '';
+          final extra = state.extra;
+          if (extra is! SugerenciaActividad || ninoId.isEmpty) {
+            return SugerenciasActividadesScreen(ninoId: ninoId);
+          }
+          return ActividadSugeridaScreen(
+            ninoId: ninoId,
+            sugerencia: extra,
+          );
+        },
       ),
       GoRoute(
         path: '/familia/perfil',
@@ -376,24 +390,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => FamilyTrackingScreen(
           initialNinoId: state.uri.queryParameters['nino'],
         ),
-      ),
-      GoRoute(
-        path: '/padre/scq/resultados',
-        builder: (context, state) {
-          final result = state.extra;
-          if (result is! SCQResult) {
-            return const FamiliaDashboardScreen();
-          }
-          return SCQResultScreen(result: result);
-        },
-      ),
-      GoRoute(
-        path: '/padre/scq/:ninoId',
-        builder: (context, state) {
-          final ninoId = state.pathParameters['ninoId'] ?? '';
-          final name = state.uri.queryParameters['nombre'];
-          return SCQFormScreen(patientId: ninoId, patientName: name);
-        },
       ),
       GoRoute(
         path: '/admin/dashboard',

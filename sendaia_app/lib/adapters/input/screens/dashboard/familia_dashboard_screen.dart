@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:rimai_app/core/providers/dashboard_providers.dart';
 import 'package:rimai_app/core/providers/auth_providers.dart';
 import 'package:rimai_app/core/providers/seguimiento_providers.dart';
+import 'package:rimai_app/core/providers/familia_sugerencias_providers.dart';
 import 'package:rimai_app/adapters/input/widgets/rimai_bottom_nav.dart';
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -153,7 +154,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Confirma el consentimiento informado y el uso no diagnostico para continuar.',
+            'Confirma el consentimiento informado y el uso no diagnóstico para continuar.',
           ),
         ),
       );
@@ -214,16 +215,12 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
   Future<void> _guardar() async {
     setState(() => _saving = true);
     try {
-      final nombreRegistrado = _nameCtrl.text.trim();
-      final debeSugerirScqLocal = _debeSugerirScq();
       final editingId = _editingNinoId;
       final service = ref.read(dashboardServiceProvider);
       final result = editingId == null
           ? await service.guardarPerfilNino(_perfilPayload())
           : await service.actualizarPerfilNino(editingId, _perfilPayload());
       final ninoId = result['id']?.toString() ?? '';
-      final requiereScq = editingId == null &&
-          (result['requiere_scq'] == true || debeSugerirScqLocal);
       ref.invalidate(familiaDashboardProvider);
       setState(() {
         _wizardMode = false;
@@ -232,19 +229,13 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         _reset();
       });
       if (mounted) {
-        if (requiereScq && ninoId.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _showScqPrompt(ninoId, nombreRegistrado);
-          });
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(editingId == null
-                ? 'Niño registrado correctamente.'
-                : 'Registro actualizado correctamente.'),
-            backgroundColor: const Color(0xFF4A52D9),
-            duration: const Duration(seconds: 4),
-          ));
-        }
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(editingId == null
+              ? 'Niño registrado correctamente.'
+              : 'Registro actualizado correctamente.'),
+          backgroundColor: const Color(0xFF4A52D9),
+          duration: const Duration(seconds: 4),
+        ));
       }
     } catch (e) {
       if (mounted) {
@@ -255,10 +246,6 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
-  }
-
-  bool _debeSugerirScq() {
-    return _diagCtrl.text.trim().isEmpty;
   }
 
   void _reset() {
@@ -339,7 +326,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
       builder: (_) => AlertDialog(
         title: const Text('Eliminar registro'),
         content: Text(
-          'Se ocultara el registro de ${p.nombre} del panel familiar y de la bandeja del terapeuta. Esta accion no elimina tu cuenta.',
+          'Se ocultará el registro de ${p.nombre} del panel familiar. Esta acción no elimina tu cuenta.',
         ),
         actions: [
           TextButton(
@@ -374,32 +361,6 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
         );
       }
     }
-  }
-
-  void _showScqPrompt(String ninoId, String nombre) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Cuestionario SCQ sugerido'),
-        content: Text(
-          'No registraste informes, plan previo ni medicacion para $nombre. Puedes responder el SCQ como orientacion preliminar antes de enviar el caso al terapeuta.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Luego'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              context.push(
-                  '/padre/scq/$ninoId?nombre=${Uri.encodeComponent(nombre)}');
-            },
-            child: const Text('Responder SCQ'),
-          ),
-        ],
-      ),
-    );
   }
 
   // ── Build ──────────────────────────────────────────────────────────────────
@@ -483,103 +444,115 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     List<PacienteDashboard> pacientes,
     PacienteDashboard nino,
   ) {
+    final today = DateTime.now();
+    final hasta = DateTime(today.year, today.month, today.day);
+    final desde = hasta.subtract(const Duration(days: 6));
+
     return SafeArea(
         child: Column(children: [
       _topBar(showAdd: true),
       Expanded(
           child: RefreshIndicator(
         color: _kP,
-        onRefresh: () async => ref.invalidate(familiaDashboardProvider),
+        onRefresh: () async {
+          ref.invalidate(familiaDashboardProvider);
+          ref.invalidate(sugerenciasFamiliaProvider(nino.id));
+          ref.invalidate(seguimientoFamiliarProvider((
+            ninoId: nino.id,
+            desde: desde,
+            hasta: hasta,
+          )));
+          try {
+            await ref.read(familiaDashboardProvider.future);
+          } catch (_) {
+            // El estado de error se muestra dentro de la pantalla.
+          }
+        },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
-          child:
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (pacientes.length > 1) ...[
-              _buildChildSelector(pacientes, nino),
-              const SizedBox(height: 20),
-            ],
-            Text('Inicio',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: _kText,
-                  height: 1.2,
-                )),
-            const SizedBox(height: 16),
-            _buildProfileSummary(nino),
-            const SizedBox(height: 24),
-            Text(
-              'ACCESOS RÁPIDOS',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-                color: _kSub,
-              ),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 960),
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (pacientes.length > 1) ...[
+                      _buildChildSelector(pacientes, nino),
+                      const SizedBox(height: 20),
+                    ],
+                    Text('Inicio',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                          color: _kText,
+                          height: 1.2,
+                        )),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Un resumen del acompañamiento de ${nino.nombre}.',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: _kSub,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildProfileSummary(nino),
+                    const SizedBox(height: 20),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final wide = constraints.maxWidth >= 720;
+                        final sugerencias =
+                            _AiSuggestionsCard(ninoId: nino.id);
+                        final actividad = _HomeActivityCard(ninoId: nino.id);
+                        if (!wide) {
+                          return Column(children: [
+                            sugerencias,
+                            const SizedBox(height: 16),
+                            actividad,
+                          ]);
+                        }
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: sugerencias),
+                            const SizedBox(width: 16),
+                            Expanded(child: actividad),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    _AssistantCard(
+                      nombre: nino.nombre,
+                      onTap: () =>
+                          context.go('/familia/chatbot?nino=${nino.id}'),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.add,
+                              color: Color(0xFFB08C68), size: 20),
+                          label: const Text('Registrar otro niño'),
+                          onPressed: () => setState(() {
+                            _reset();
+                            _wizardMode = true;
+                            _step = 0;
+                          }),
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFFB08C68),
+                            side: const BorderSide(color: _kA, width: 1.2),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                          ),
+                        )),
+                  ]),
             ),
-            const SizedBox(height: 12),
-            _FamilyQuickAccessCard(
-              icon: Icons.school_rounded,
-              title: 'Perfil de aprendizaje',
-              subtitle: 'Consulta y actualiza su perfil',
-              accent: _kP,
-              onTap: () => context.go('/familia/perfil?nino=${nino.id}'),
-            ),
-            const SizedBox(height: 10),
-            _FamilyQuickAccessCard(
-              icon: Icons.lightbulb_outline_rounded,
-              title: 'Sugerencias de actividades',
-              subtitle: 'Revisa las actividades de su plan',
-              accent: const Color(0xFFE0A642),
-              onTap: () => context.go('/familia/plan/${nino.id}'),
-            ),
-            const SizedBox(height: 10),
-            _FamilyQuickAccessCard(
-              icon: Icons.insights_rounded,
-              title: 'Seguimiento familiar',
-              subtitle: 'Consulta sus avances y actividades',
-              accent: _kA,
-              onTap: () =>
-                  context.go('/familia/seguimiento?nino=${nino.id}'),
-            ),
-            const SizedBox(height: 10),
-            _FamilyQuickAccessCard(
-              icon: Icons.forum_rounded,
-              title: 'Asistente para padres',
-              subtitle: 'Encuentra orientación para acompañarle',
-              accent: const Color(0xFF77B8D7),
-              onTap: () => context.go('/familia/chatbot?nino=${nino.id}'),
-            ),
-            const SizedBox(height: 24),
-            _RecentFamilyActivity(ninoId: nino.id),
-            if (nino.requiereScq &&
-                (!nino.scqCompletado || !nino.scqAutorizadoEnvio)) ...[
-              const SizedBox(height: 16),
-              _buildScqAction(nino),
-            ],
-            const SizedBox(height: 16),
-            SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon:
-                      const Icon(Icons.add, color: Color(0xFFB08C68), size: 20),
-                  label: const Text('Registrar otro niño'),
-                  onPressed: () => setState(() {
-                    _reset();
-                    _wizardMode = true;
-                    _step = 0;
-                  }),
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFFB08C68),
-                    side: const BorderSide(color: _kA, width: 1.2),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16)),
-                  ),
-                )),
-          ]),
+          ),
         ),
       )),
     ]));
@@ -621,17 +594,14 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
     final formas = nino.hitos['forma_aprende'] is List
         ? (nino.hitos['forma_aprende'] as List)
             .map((item) => item.toString())
+            .where((item) => item.trim().isNotEmpty)
             .toList()
         : <String>[];
-    final intereses = nino.intereses;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: _kBdr.withValues(alpha: 0.8)),
-      ),
+    final intereses =
+        nino.intereses.where((item) => item.trim().isNotEmpty).toList();
+    final nivel = nino.nivelCognitivo.trim();
+
+    return _HomeCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -657,11 +627,12 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                     Text(
                       nino.nombre,
                       style: GoogleFonts.plusJakartaSans(
-                        fontSize: 20,
+                        fontSize: 22,
                         fontWeight: FontWeight.w800,
                         color: _kText,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
                       '${nino.edad} años',
                       style: GoogleFonts.plusJakartaSans(
@@ -685,27 +656,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Resumen de su perfil',
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: _kText,
-            ),
-          ),
-          const SizedBox(height: 10),
-          _ProfileSummaryLine(
-            label: 'Nivel de aprendizaje',
-            value: nino.nivelCognitivo.isEmpty
-                ? 'Sin registrar'
-                : nino.nivelCognitivo,
-          ),
-          if (nino.diagnostico?.trim().isNotEmpty == true)
-            _ProfileSummaryLine(
-              label: 'Diagnóstico registrado',
-              value: nino.diagnostico!,
-            ),
+          const SizedBox(height: 14),
           if (formas.isNotEmpty)
             _ProfileSummaryLine(
               label: 'Forma de aprender',
@@ -716,66 +667,21 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
               label: 'Intereses',
               value: intereses.join(', '),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildScqAction(PacienteDashboard nino) {
-    final puedeEnviar = nino.scqCompletado && !nino.scqAutorizadoEnvio;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _kBdr),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.quiz_outlined, color: _kP),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              puedeEnviar
-                  ? 'El cuestionario está listo para enviar al terapeuta.'
-                  : 'Completa el cuestionario SCQ sugerido para este registro.',
+          if (nivel.isNotEmpty)
+            _ProfileSummaryLine(
+              label: 'Nivel de aprendizaje',
+              value: nivel,
+            ),
+          if (formas.isEmpty && intereses.isEmpty && nivel.isEmpty)
+            Text(
+              'Completa el perfil de aprendizaje para ver aquí sus intereses y su forma de aprender.',
               style: GoogleFonts.plusJakartaSans(
                 fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: _kText,
+                fontWeight: FontWeight.w500,
+                color: _kSub,
+                height: 1.4,
               ),
             ),
-          ),
-          TextButton(
-            onPressed: () {
-              if (puedeEnviar) {
-                ref
-                    .read(dashboardServiceProvider)
-                    .enviarCasoScqATerapeuta(nino.id)
-                    .then((_) {
-                  ref.invalidate(familiaDashboardProvider);
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text('Solicitud enviada al terapeuta.')),
-                    );
-                  }
-                }).catchError((Object error) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('$error')),
-                    );
-                  }
-                });
-              } else {
-                context.push(
-                  '/padre/scq/${nino.id}?nombre=${Uri.encodeComponent(nino.nombre)}',
-                );
-              }
-            },
-            child: Text(puedeEnviar ? 'Enviar' : 'Responder'),
-          ),
         ],
       ),
     );
@@ -1470,7 +1376,7 @@ class _State extends ConsumerState<FamiliaDashboardScreen> {
                             ),
                           ),
                           subtitle: Text(
-                            'Confirmo el tratamiento de datos sensibles del nino conforme a la Ley N. 29733 y entiendo que SendaIA es una herramienta de apoyo al aprendizaje, no un diagnostico.',
+                            'Confirmo el tratamiento de datos sensibles del niño conforme a la Ley N. 29733 y entiendo que SendaIA es una herramienta de apoyo al aprendizaje, no un diagnóstico.',
                             style: GoogleFonts.plusJakartaSans(
                               fontSize: 12,
                               color: _kSub,
@@ -1765,10 +1671,248 @@ class _ProfileSummaryLine extends StatelessWidget {
   }
 }
 
-class _RecentFamilyActivity extends ConsumerWidget {
+/// Contenedor base de las tarjetas del Inicio, para mantener el diseño visual.
+class _HomeCard extends StatelessWidget {
+  final Widget child;
+
+  const _HomeCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: _kBdr.withValues(alpha: 0.8)),
+      ),
+      child: child,
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color accent;
+
+  const _SectionHeader({
+    required this.icon,
+    required this.title,
+    required this.accent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: accent.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 20, color: accent),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            title,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w800,
+              color: _kText,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Resumen breve de las actividades sugeridas por IA para el niño.
+/// Reutiliza el módulo de sugerencias existente; no calcula nada por su cuenta.
+class _AiSuggestionsCard extends ConsumerWidget {
   final String ninoId;
 
-  const _RecentFamilyActivity({required this.ninoId});
+  const _AiSuggestionsCard({required this.ninoId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(sugerenciasFamiliaProvider(ninoId));
+
+    return _HomeCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader(
+            icon: Icons.auto_awesome_rounded,
+            title: 'Actividades recomendadas por IA',
+            accent: _kA,
+          ),
+          const SizedBox(height: 12),
+          async.when(
+            loading: () => Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: _kP),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Analizando el perfil...',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _kSub,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            error: (error, _) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No se pudieron cargar las sugerencias.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _kSub,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () =>
+                        ref.invalidate(sugerenciasFamiliaProvider(ninoId)),
+                    child: const Text('Reintentar'),
+                  ),
+                ),
+              ],
+            ),
+            data: (data) {
+              final sugerencias = data.sugerencias;
+              if (sugerencias.isEmpty) {
+                return Text(
+                  'Aún no hay sugerencias disponibles para este perfil.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: _kSub,
+                    height: 1.4,
+                  ),
+                );
+              }
+              final nombre =
+                  data.ninoNombre.trim().isEmpty ? 'tu hijo' : data.ninoNombre;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${sugerencias.length} actividades sugeridas según el perfil de $nombre.',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: _kSub,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  for (final sugerencia in sugerencias.take(2))
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      decoration: BoxDecoration(
+                        color: _kSurf,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _kBdr.withValues(alpha: 0.6)),
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => context.push(
+                          '/familia/sugerencias/actividad?nino=$ninoId',
+                          extra: sugerencia,
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 2),
+                                child: Icon(Icons.school_rounded,
+                                    size: 16, color: _kP),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      sugerencia.nombre,
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: _kText,
+                                      ),
+                                    ),
+                                    Text(
+                                      _detalleSugerencia(sugerencia),
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: _kSub,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Icon(Icons.arrow_forward_ios_rounded,
+                                  size: 12, color: _kSub),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () => context
+                          .go('/familia/sugerencias?ninoId=$ninoId'),
+                      icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                      label: const Text('Ver todas las sugerencias'),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _detalleSugerencia(SugerenciaActividad sugerencia) {
+    final partes = <String>[];
+    if (sugerencia.tipo.trim().isNotEmpty) partes.add(sugerencia.tipo);
+    if (sugerencia.duracionMinutos != null) {
+      partes.add('${sugerencia.duracionMinutos} min');
+    }
+    return partes.join(' · ');
+  }
+}
+
+/// Resumen real de la actividad realizada en casa durante los últimos 7 días.
+class _HomeActivityCard extends ConsumerWidget {
+  final String ninoId;
+
+  const _HomeActivityCard({required this.ninoId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1776,195 +1920,279 @@ class _RecentFamilyActivity extends ConsumerWidget {
     final hasta = DateTime(today.year, today.month, today.day);
     final args = (
       ninoId: ninoId,
-      desde: hasta.subtract(const Duration(days: 30)),
+      desde: hasta.subtract(const Duration(days: 6)),
       hasta: hasta,
     );
-    final activityAsync = ref.watch(seguimientoFamiliarProvider(args));
+    final async = ref.watch(seguimientoFamiliarProvider(args));
 
-    return activityAsync.when(
-      loading: () => const SizedBox.shrink(),
-      error: (error, _) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBdr),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.cloud_off_outlined, color: _kSub),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'No se pudo cargar la actividad reciente.',
-                style: GoogleFonts.plusJakartaSans(
-                  fontSize: 12,
-                  color: _kSub,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () =>
-                  ref.invalidate(seguimientoFamiliarProvider(args)),
-              child: const Text('Reintentar'),
-            ),
-          ],
-        ),
-      ),
-      data: (seguimiento) {
-        if (seguimiento.registros.isEmpty) return const SizedBox.shrink();
-
-        final registros = [...seguimiento.registros]
-          ..sort((a, b) => (b.fecha ?? DateTime(1970))
-              .compareTo(a.fecha ?? DateTime(1970)));
-        final reciente = registros.first;
-        final fecha = reciente.fecha;
-        final fechaTexto = fecha == null
-            ? ''
-            : '${fecha.day}/${fecha.month}/${fecha.year}';
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'ACTIVIDAD RECIENTE',
-              style: GoogleFonts.plusJakartaSans(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-                color: _kSub,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: _kBdr.withValues(alpha: 0.8)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: _kP.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(Icons.task_alt_rounded, color: _kP),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          reciente.actividadNombre,
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w800,
-                            color: _kText,
-                          ),
-                        ),
-                        if (fechaTexto.isNotEmpty)
-                          Text(
-                            fechaTexto,
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 12,
-                              color: _kSub,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _FamilyQuickAccessCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Color accent;
-  final VoidCallback onTap;
-
-  const _FamilyQuickAccessCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.accent,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _kBdr.withValues(alpha: 0.7)),
+    return _HomeCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader(
+            icon: Icons.home_rounded,
+            title: 'Actividad en casa',
+            accent: _kP,
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: accent.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 4),
+          Text(
+            'Últimos 7 días',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: _kSub,
+            ),
+          ),
+          const SizedBox(height: 12),
+          async.when(
+            loading: () => Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: _kP),
                 ),
-                child: Icon(icon, size: 21, color: accent),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Cargando la actividad...',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _kSub,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            error: (error, _) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No se pudo cargar la actividad en casa.',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _kSub,
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: () =>
+                        ref.invalidate(seguimientoFamiliarProvider(args)),
+                    child: const Text('Reintentar'),
+                  ),
+                ),
+              ],
+            ),
+            data: (seguimiento) {
+              final registros = seguimiento.registros
+                  .where((registro) => registro.estado == 'completada')
+                  .toList()
+                ..sort((a, b) => (b.fecha ?? DateTime(1970))
+                    .compareTo(a.fecha ?? DateTime(1970)));
+              if (seguimiento.actividadesCompletadas == 0 &&
+                  registros.isEmpty) {
+                return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: _kText,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
+                      'Aún no hay actividades registradas en los últimos 7 días. Elige una actividad para acompañar a tu hijo hoy.',
                       style: GoogleFonts.plusJakartaSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                         color: _kSub,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () => context
+                            .go('/familia/sugerencias?ninoId=$ninoId'),
+                        icon: const Icon(Icons.play_arrow_rounded, size: 20),
+                        label: const Text('Elegir actividad para hoy'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _kP,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                   ],
-                ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: _kSub,
-              ),
-            ],
+                );
+              }
+
+              final reciente = registros.isNotEmpty ? registros.first : null;
+              final fecha = reciente?.fecha;
+              final fechaTexto = fecha == null
+                  ? ''
+                  : '${fecha.day}/${fecha.month}/${fecha.year}';
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 24,
+                    runSpacing: 8,
+                    children: [
+                      _MetricStat(
+                        value: '${seguimiento.actividadesCompletadas}',
+                        label: seguimiento.actividadesCompletadas == 1
+                            ? 'actividad'
+                            : 'actividades',
+                      ),
+                      _MetricStat(
+                        value: '${seguimiento.diasConActividad}',
+                        label: seguimiento.diasConActividad == 1
+                            ? 'día con actividad'
+                            : 'días con actividad',
+                      ),
+                    ],
+                  ),
+                  if (reciente != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'Última actividad',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: _kSub,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      reciente.actividadNombre,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: _kText,
+                      ),
+                    ),
+                    if (fechaTexto.isNotEmpty)
+                      Text(
+                        fechaTexto,
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: _kSub,
+                        ),
+                      ),
+                  ],
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => context
+                          .go('/familia/sugerencias?ninoId=$ninoId'),
+                      icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                      label: const Text('Elegir otra actividad'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: _kP,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricStat extends StatelessWidget {
+  final String value;
+  final String label;
+
+  const _MetricStat({required this.value, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: _kText,
+            height: 1.1,
           ),
         ),
+        Text(
+          label,
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: _kSub,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Acceso al Asistente para padres con un mensaje breve de orientación.
+class _AssistantCard extends StatelessWidget {
+  final String nombre;
+  final VoidCallback onTap;
+
+  const _AssistantCard({required this.nombre, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return _HomeCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const _SectionHeader(
+            icon: Icons.forum_rounded,
+            title: 'Asistente para padres',
+            accent: Color(0xFF77B8D7),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '¿Tienes dudas sobre cómo acompañar el aprendizaje de $nombre? '
+            'Encuentra orientación educativa sobre rutinas, concentración y motivación.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: _kSub,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: onTap,
+              icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
+              label: const Text('Hablar con el asistente'),
+              style: FilledButton.styleFrom(
+                backgroundColor: _kA,
+                foregroundColor: _kText,
+                elevation: 0,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

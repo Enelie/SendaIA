@@ -133,3 +133,97 @@ def test_respuesta_con_registros_y_recomendadas():
 def test_duracion_solo_para_registros_de_la_app_familiar():
     assert "familia_app" in ctrl.DURACION_SQL
     assert "familia_app_offline" in ctrl.DURACION_SQL
+
+
+# ── POST /api/familia/ninos/{id}/actividades-realizadas ───────────────────────
+
+ACTIVIDAD = "aaaaaaaa-0000-0000-0000-000000000001"
+EVENTO = "bbbbbbbb-0000-0000-0000-000000000002"
+
+
+def _post_url():
+    return f"/api/familia/ninos/{NINO}/actividades-realizadas"
+
+
+def test_registra_actividad_familiar_sin_plan():
+    fecha = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+    fake, cur = _mock_conn(
+        [{"id": NINO, "nombre": "Diego"}, {"id": ACTIVIDAD}, {"id": "r1", "fecha": fecha}],
+        [],
+    )
+    with patch.object(ctrl, "get_connection", fake):
+        res = _client(TUTOR_USER).post(
+            _post_url(),
+            json={
+                "actividad_id": ACTIVIDAD,
+                "modalidad": "casa_sin_app",
+                "nivel_ayuda_requerido": 1,
+                "observaciones": "  Lo hizo con ayuda  ",
+            },
+        )
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["ok"] is True and body["duplicado"] is False
+    assert body["registro_id"] == "r1"
+
+    insert = cur.execute.call_args_list[-1].args
+    assert "INSERT INTO registros_actividad_familia" in insert[0]
+    params = insert[1]
+    assert params[0] == NINO and params[1] == ACTIVIDAD
+    assert params[2] == "completada" and params[3] == "casa_sin_app"
+    assert params[7] == 1
+    assert params[8] == "Lo hizo con ayuda"
+    assert params[9] is None
+
+
+def test_reintento_con_mismo_client_event_no_duplica():
+    fecha = datetime(2026, 11, 9, 12, 0, tzinfo=timezone.utc)
+    fake, cur = _mock_conn(
+        [{"id": NINO, "nombre": "Diego"}, {"id": "r1", "fecha": fecha}],
+        [],
+    )
+    with patch.object(ctrl, "get_connection", fake):
+        res = _client(TUTOR_USER).post(
+            _post_url(),
+            json={"actividad_id": ACTIVIDAD, "client_event_id": EVENTO},
+        )
+
+    assert res.status_code == 200
+    assert res.json()["duplicado"] is True
+    assert not any(
+        "INSERT INTO registros_actividad_familia" in call.args[0]
+        for call in cur.execute.call_args_list
+    )
+
+
+def test_post_actividad_inexistente_devuelve_404():
+    fake, cur = _mock_conn(
+        [{"id": NINO, "nombre": "Diego"}, None],
+        [],
+    )
+    with patch.object(ctrl, "get_connection", fake):
+        res = _client(TUTOR_USER).post(
+            _post_url(), json={"actividad_id": ACTIVIDAD}
+        )
+    assert res.status_code == 404
+
+
+def test_post_rechaza_actividad_uuid_invalido():
+    fake, cur = _mock_conn([], [])
+    with patch.object(ctrl, "get_connection", fake):
+        res = _client(TUTOR_USER).post(
+            _post_url(), json={"actividad_id": "no-es-uuid"}
+        )
+    assert res.status_code == 422
+    cur.execute.assert_not_called()
+
+
+@pytest.mark.parametrize("role", ["terapeuta", "admin"])
+def test_post_rechaza_roles_no_familiares(role):
+    fake, cur = _mock_conn([], [])
+    with patch.object(ctrl, "get_connection", fake):
+        res = _client({"id": "x", "role": role}).post(
+            _post_url(), json={"actividad_id": ACTIVIDAD}
+        )
+    assert res.status_code == 403

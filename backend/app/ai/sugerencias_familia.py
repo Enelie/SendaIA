@@ -2,17 +2,20 @@
 
 Selecciona actividades del catalogo existente a partir del perfil de
 aprendizaje del nino (campos educativos del wizard). No usa informacion
-clinica, no genera texto libre ni inventa datos: combina el modelo de
-dificultad real del proyecto (motor.py) con reglas de seleccion
-explicables que devuelven motivos basados en datos reales del perfil.
+clinica, no genera texto libre ni inventa datos: estima la dificultad con
+reglas pedagogicas transparentes (edad, atencion, seguimiento de
+instrucciones y fatiga) y aplica reglas de seleccion explicables que
+devuelven motivos basados en datos reales del perfil.
+
+El estimador esta desacoplado de `rf_dificultad.pkl` a proposito: el modelo
+clinico de TEA no es una fuente valida para adaptar tareas escolares de un
+nino con TDAH.
 """
 from __future__ import annotations
 
 import unicodedata
 from datetime import date, datetime
 from typing import Any, Dict, List, Tuple
-
-from app.ai.motor import motor_adaptativo
 
 # Campos educativos considerados para personalizar la seleccion.
 CAMPOS_PERFIL = (
@@ -30,27 +33,51 @@ CAMPOS_PERFIL = (
     "pausas",
 )
 
-#.Areas de aprendizaje dificiles -> palabras propias del catalogo.
+# Áreas de aprendizaje difíciles -> palabras clave del catálogo educativo.
 _AREAS_DIFICILES: Tuple[Tuple[Tuple[str, ...], Tuple[str, ...]], ...] = (
     (
-        ("lectura", "escribir", "texto", "letra"),
-        ("comunicacion", "instruccion", "senalar", "lectura"),
+        ("lectura", "leer", "texto", "cuento", "libro", "comprension", "entender"),
+        ("lectura", "quien", "historia", "final", "ideas", "texto", "lector"),
     ),
     (
-        ("matematica", "numero", "geometria", "cuenta"),
-        ("cognitivo", "clasificacion", "color"),
+        ("escribir", "escritura", "letras", "oracion", "oraciones", "redaccion"),
+        ("escrita", "oracion", "organizador", "relato", "palabras", "escribir"),
+    ),
+    (
+        ("matematica", "calculo", "numero", "numeros", "cuenta", "geometria", "patron", "secuencia", "logica"),
+        ("secuencias", "patrones", "matematicos", "codigo", "numerico", "logico", "clasificacion"),
+    ),
+    (
+        ("analisis", "comparar", "detalles", "diferencias", "observar", "atencion"),
+        ("diferencias", "comparando", "causa", "efecto", "visuales", "observacion"),
+    ),
+    (
+        ("organizacion", "orden", "autonomia", "rutina", "rutinas", "tiempo", "mochila", "olvida"),
+        ("autonomia", "despejada", "checklist", "pomodoro", "tareas", "regla"),
     ),
 )
 
-# Formas de aprender declaradas en el wizard -> palabras del catalogo.
+# Formas de aprender declaradas en el wizard -> palabras del catálogo.
 _FORMAS: Dict[str, Tuple[Tuple[str, ...], int]] = {
-    "visual": (("visual", "seguimiento", "contacto", "color", "colores"), 4),
-    "practico": (("piezas", "insertar", "clasificacion", "motricidad"), 4),
-    "auditivo": (("musica", "sonido", "calibracion"), 4),
-    "lectura": (("comunicacion", "instruccion", "senalar"), 3),
+    "visual": (("visual", "imagenes", "diagrama", "color", "esquema", "plantilla", "post-its"), 4),
+    "practico": (("fichas", "objetos", "manipular", "botones", "monedas", "practico"), 4),
+    "auditivo": (("voz", "explicacion", "musica", "sonido", "postas", "cuento"), 4),
+    "lectura": (("lectura", "escribir", "oracion", "texto", "diario", "instrucciones"), 4),
 }
 
-_DIFICULTAD_MAP = {"basico": "Bajo", "intermedio": "Medio", "avanzado": "Alto"}
+# Factores que indican fatiga o baja disponibilidad para aprender.
+_FACTORES_FATIGA = ("poco sueno", "cansancio", "hambre")
+
+# Areas del catalogo educativo para casa. Las actividades clinicas del plan
+# terapeutico no se mezclan en las sugerencias familiares.
+_AREAS_EDUCATIVAS = {
+    "Comprensión lectora",
+    "Expresión escrita",
+    "Razonamiento lógico",
+    "Análisis",
+    "Autonomía",
+    "Pausas y autorregulación",
+}
 
 
 def _norm(value: Any) -> str:
@@ -83,28 +110,68 @@ def _edad(fecha: Any) -> int:
     )
 
 
+def _categorizar_area(tipo_raw: str, nombre_raw: str) -> str:
+    """Clasifica el área educativa principal de la actividad para el panel."""
+    texto = _norm(f"{tipo_raw} {nombre_raw}")
+    if any(k in texto for k in ("lectura", "lector", "leer", "texto", "cuento")):
+        return "Comprensión lectora"
+    if any(k in texto for k in ("escrita", "escribir", "oracion", "redaccion", "relato")):
+        return "Expresión escrita"
+    if any(k in texto for k in ("logico", "logica", "matematica", "secuencia", "patron", "numero", "codigo")):
+        return "Razonamiento lógico"
+    if any(k in texto for k in ("analisis", "diferencia", "comparar", "semejanza", "causa")):
+        return "Análisis"
+    if any(k in texto for k in ("autonomia", "orden", "despejada", "checklist", "pomodoro", "mochila")):
+        return "Autonomía"
+    if any(k in texto for k in ("pausa", "respiracion", "relajacion", "robot", "triangulo", "regulacion")):
+        return "Pausas y autorregulación"
+    return tipo_raw or "General"
+
+
 def dificultad_estimada(nino: Dict[str, Any]) -> Tuple[str, float]:
-    """Nivel de dificultad real del proyecto (rf_dificultad.pkl)."""
-    try:
-        payload: Dict[str, Any] = {
-            "nivel_cognitivo": nino.get("nivel_cognitivo") or "Bajo",
-            "perfil_sensorial": nino.get("perfil_sensorial") or {},
-            "objetivos_intervencion": nino.get("objetivos_intervencion") or [],
-        }
-        if nino.get("fecha_nacimiento"):
-            payload["fecha_nacimiento"] = nino["fecha_nacimiento"]
-        dificultad, confianza = motor_adaptativo.predecir_dificultad(payload)
-        return _DIFICULTAD_MAP.get(_norm(dificultad), "Medio"), float(
-            confianza or 0.0
-        )
-    except Exception:
-        edad = _edad(nino.get("fecha_nacimiento"))
-        nivel = _norm(nino.get("nivel_cognitivo"))
-        if nivel == "alto":
-            return "Alto", 0.5
-        if edad and edad < 7:
-            return "Bajo", 0.5
-        return "Medio", 0.5
+    """Estima el nivel de dificultad mediante reglas pedagógicas transparentes (TDAH).
+
+    Desacoplado intencionalmente del modelo rf_dificultad.pkl de TEA para evitar
+    sesgos clínicos no validados en el aprendizaje de niños con TDAH.
+    """
+    edad = _edad(nino.get("fecha_nacimiento"))
+    perfil = _perfil_educativo(nino)
+    atencion = _norm(perfil.get("nivel_atencion"))
+    instrucciones = _norm(perfil.get("seguir_instrucciones"))
+    pausas = _norm(perfil.get("pausas"))
+    fatiga = any(
+        factor in _FACTORES_FATIGA
+        for factor in (_norm(f) for f in perfil.get("factores_concentracion", []))
+    )
+
+    # Nivel base por edad escolar típica
+    if edad and edad <= 6:
+        base_score = 0  # Bajo
+    elif edad and edad >= 11:
+        base_score = 2  # Alto
+    else:
+        base_score = 1  # Medio
+
+    # Ajustes pedagógicos explicables
+    if "bajo" in atencion or "cuesta" in instrucciones or "paso a paso" in instrucciones:
+        base_score = max(0, base_score - 1)
+    elif "alto" in atencion and "varios pasos" in instrucciones:
+        base_score = min(2, base_score + 1)
+
+    # Fatiga declarada o necesidad frecuente de pausas: baja la exigencia.
+    if fatiga:
+        base_score = max(0, base_score - 1)
+    if "con frecuencia" in pausas and base_score == 2:
+        base_score = 1
+
+    map_dificultad = {0: "Bajo", 1: "Medio", 2: "Alto"}
+    dificultad = map_dificultad.get(base_score, "Medio")
+
+    # Confianza según el nivel de completitud de datos del perfil
+    campos_llenos = sum(1 for c in CAMPOS_PERFIL if perfil.get(c))
+    confianza = round(min(0.95, 0.50 + (campos_llenos * 0.04)), 2)
+
+    return dificultad, confianza
 
 
 def _perfil_educativo(nino: Dict[str, Any]) -> Dict[str, Any]:
@@ -302,10 +369,21 @@ def construir_sugerencias(
     dificultad, confianza = dificultad_estimada(nino)
     campos = [c for c in CAMPOS_PERFIL if perfil.get(c)]
 
+    activas = [a for a in (catalogo or []) if a.get("activo", True)]
+    educativas = [
+        a
+        for a in activas
+        if _categorizar_area(
+            str(a.get("tipo") or ""), str(a.get("nombre") or "")
+        )
+        in _AREAS_EDUCATIVAS
+    ]
+    # Si la base aun no tiene el catalogo educativo (migracion pendiente),
+    # se conserva el catalogo completo para no dejar el panel vacio.
+    candidatas = educativas or activas
+
     puntuadas: List[Tuple[int, Dict[str, Any], List[str], List[str]]] = []
-    for actividad in catalogo or []:
-        if not actividad.get("activo", True):
-            continue
+    for actividad in candidatas:
         score, motivos, consejos = _puntuar(actividad, perfil, dificultad)
         puntuadas.append((score, actividad, motivos, consejos))
 
@@ -313,8 +391,32 @@ def construir_sugerencias(
         key=lambda item: (-item[0], _norm(item[1].get("nombre")))
     )
 
+    # Primera pasada: asegura representacion de cada area educativa para que
+    # los filtros del panel familiar no queden vacios. Segunda pasada: completa
+    # con las mejores actividades restantes segun la puntuacion.
+    seleccionadas: List[Tuple[int, Dict[str, Any], List[str], List[str]]] = []
+    areas_vistas: set = set()
+    for item in puntuadas:
+        area = _categorizar_area(
+            str(item[1].get("tipo") or ""),
+            str(item[1].get("nombre") or ""),
+        )
+        if area in areas_vistas:
+            continue
+        areas_vistas.add(area)
+        seleccionadas.append(item)
+        if len(seleccionadas) >= limite:
+            break
+    if len(seleccionadas) < limite:
+        for item in puntuadas:
+            if item in seleccionadas:
+                continue
+            seleccionadas.append(item)
+            if len(seleccionadas) >= limite:
+                break
+
     sugerencias = []
-    for score, actividad, motivos, consejos in puntuadas[:limite]:
+    for score, actividad, motivos, consejos in seleccionadas:
         try:
             duracion = int(actividad.get("duracion_estimada") or 0)
         except (TypeError, ValueError):
@@ -328,6 +430,10 @@ def construir_sugerencias(
                 "actividad_id": str(actividad.get("id")),
                 "nombre": actividad.get("nombre"),
                 "tipo": actividad.get("tipo"),
+                "area_educativa": _categorizar_area(
+                    str(actividad.get("tipo") or ""),
+                    str(actividad.get("nombre") or ""),
+                ),
                 "nivel_dificultad": actividad.get("nivel_dificultad"),
                 "duracion_segundos": duracion,
                 "duracion_minutos": round(duracion / 60)
@@ -351,8 +457,8 @@ def construir_sugerencias(
         "sugerencias": sugerencias,
         "total_catalogo": len(catalogo or []),
         "nota": (
-            "Sugerencias seleccionadas a partir del perfil de aprendizaje "
-            "y el modelo de dificultad del proyecto. No constituyen "
-            "indicacion clinica ni diagnostico."
+            "Sugerencias educativas seleccionadas a partir del perfil de aprendizaje "
+            "del niño mediante reglas pedagógicas adaptativas para el hogar. No constituyen "
+            "indicación clínica ni diagnóstico médico."
         ),
     }
