@@ -1,0 +1,32 @@
+@startuml arquitectura_general
+' Figura 20. Arquitectura general del software SENDAIA (cliente-servidor).
+' Fuente: sendaia_app/ (Flutter), backend/ (FastAPI), docker-compose.yml.
+skinparam shadowing false
+skinparam componentStyle rectangle
+title Arquitectura general del software SENDAIA
+
+actor "Padre o tutor" as padre
+actor "Terapeuta" as terapeuta
+actor "Investigador (admin)" as admin
+
+node "Teléfono (Android)" {
+  component "Aplicación SENDAIA\n(Flutter / Dart)" as app
+  database "SQLite local\n(sqflite: rimai_offline.db)" as sqlite
+  component "Flutter Secure Storage\n(token JWT)" as secure
+}
+
+node "Servidor (Docker)" {
+  component "Backend API REST\n(FastAPI / Python)\ncontenedor rimai_api" as api
+  component "Motor de IA\n(Random Forest, Scikit-learn)" as ia
+  database "PostgreSQL 15\ncontenedor rimai_postgres\n(base rimai_db)" as pg
+}
+
+padre --> app
+terapeuta --> app
+admin --> api : exportación del\nregistro de uso
+app --> sqlite : pendientes sin conexión
+app --> secure
+app --> api : HTTP + JSON (REST)\nAuthorization: Bearer JWT
+api --> ia
+api --> pg : SQL parametrizado\n(psycopg2)
+@enduml

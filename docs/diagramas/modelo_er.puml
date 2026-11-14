@@ -1,0 +1,204 @@
+@startuml modelo_er
+' Modelo entidad-relacion de SENDAIA (PostgreSQL 15).
+' Fuente: esquema real creado por backend/sql/01_init.sql ... 16_migration_nivel_acompanamiento.sql.
+' Todas las claves son UUID. Se muestran las columnas principales, no todas.
+hide circle
+skinparam linetype ortho
+skinparam shadowing false
+title Modelo entidad-relación de SENDAIA
+
+entity usuarios {
+  * id : uuid <<PK>>
+  --
+  nombre : varchar
+  email : varchar <<unique>>
+  password_hash : varchar
+  rol : rol_usuario (padre_tutor, terapeuta, admin)
+  activo : boolean
+}
+
+entity padres_tutores {
+  * id : uuid <<PK>>
+  --
+  * usuario_id : uuid <<FK, unique>>
+  telefono : varchar
+}
+
+entity terapeutas {
+  * id : uuid <<PK>>
+  --
+  * usuario_id : uuid <<FK, unique>>
+  especialidad : varchar
+  colegiatura : varchar
+}
+
+entity ninos {
+  * id : uuid <<PK>>
+  --
+  tutor_id : uuid <<FK>>
+  terapeuta_id : uuid <<FK>>
+  nombre : varchar
+  fecha_nacimiento : date
+  diagnostico : varchar
+  perfil_sensorial : jsonb
+  estado_clinico : estado_clinico
+  nivel_acompanamiento : smallint (1-3)
+}
+
+entity consentimientos_informados {
+  * id : uuid <<PK>>
+  --
+  * nino_id : uuid <<FK>>
+  tutor_id : uuid <<FK>>
+  usuario_id : uuid <<FK>>
+  version : varchar
+  aceptado : boolean
+  accepted_at : timestamptz
+  revoked_at : timestamptz
+}
+
+entity actividades {
+  * id : uuid <<PK>>
+  --
+  tipo : varchar
+  nombre : varchar
+  nivel_dificultad : nivel_dificultad
+  duracion_estimada : integer
+}
+
+entity planes_terapeuticos {
+  * id : uuid <<PK>>
+  --
+  * nino_id : uuid <<FK>>
+  * terapeuta_id : uuid <<FK>>
+  estado_plan : varchar
+  publicado_para_tutor : boolean
+}
+
+entity plan_actividades {
+  * plan_id : uuid <<PK, FK>>
+  * actividad_id : uuid <<PK, FK>>
+  --
+  orden : integer
+  modo_ejecucion : varchar
+  requiere_acompanamiento : boolean
+}
+
+entity sesiones {
+  * id : uuid <<PK>>
+  --
+  * nino_id : uuid <<FK>>
+  * plan_id : uuid <<FK>>
+  ejecutado_por_usuario_id : uuid <<FK>>
+  fecha_inicio : timestamptz
+  fecha_fin : timestamptz
+  client_event_id : uuid
+}
+
+entity resultados_actividad {
+  * id : uuid <<PK>>
+  --
+  * sesion_id : uuid <<FK>>
+  * actividad_id : uuid <<FK>>
+  aciertos : integer
+  repeticiones : integer
+  tiempo_respuesta : double
+}
+
+entity decisiones_clinicas {
+  * id : uuid <<PK>>
+  --
+  * terapeuta_id : uuid <<FK>>
+  nino_id : uuid <<FK>>
+  accion : varchar
+}
+
+entity alertas_clinicas {
+  * id : uuid <<PK>>
+  --
+  * nino_id : uuid <<FK>>
+  * terapeuta_id : uuid <<FK>>
+  tutor_id : uuid <<FK>>
+  notificacion_terapeuta_id : uuid <<FK>>
+  notificacion_familia_id : uuid <<FK>>
+  dedupe_key : varchar <<unique>>
+}
+
+entity notificaciones {
+  * id : uuid <<PK>>
+  --
+  * usuario_id : uuid <<FK>>
+  titulo : varchar
+  leido : boolean
+}
+
+entity configuracion_notificaciones {
+  * usuario_id : uuid <<PK, FK>>
+  --
+  canal_preferido : varchar
+  umbral_inactividad_dias : integer
+}
+
+entity logs_auditoria {
+  * id : uuid <<PK>>
+  --
+  usuario_id : uuid <<FK>>
+  nino_id : uuid <<FK>>
+  accion : varchar
+  entidad_afectada : varchar
+  timestamp_servidor : timestamptz
+}
+
+entity evidencias_cumplimiento {
+  * id : uuid <<PK>>
+  --
+  control : varchar
+  estado : varchar
+}
+
+entity participantes_estudio {
+  * id : uuid <<PK>>
+  --
+  * usuario_id : uuid <<FK, unique>>
+  * consentimiento_id : uuid <<FK>>
+  codigo : varchar <<unique>>
+  activo : boolean
+}
+
+entity logs_uso {
+  * id : uuid <<PK>>
+  --
+  * usuario_id : uuid <<FK>>
+  client_event_id : uuid <<unique>>
+  fecha_hora_ingreso : timestamptz
+  fecha_hora_salida : timestamptz
+  tiempo_permanencia_min : numeric
+  tipo_cierre : varchar
+}
+
+usuarios ||--o| padres_tutores : tiene
+usuarios ||--o| terapeutas : tiene
+padres_tutores |o--o{ ninos : registra
+terapeutas |o--o{ ninos : atiende
+ninos ||--o{ consentimientos_informados : tiene
+padres_tutores |o--o{ consentimientos_informados : otorga
+ninos ||--o{ planes_terapeuticos : tiene
+terapeutas ||--o{ planes_terapeuticos : elabora
+planes_terapeuticos ||--o{ plan_actividades : incluye
+actividades ||--o{ plan_actividades : forma parte
+ninos ||--o{ sesiones : realiza
+planes_terapeuticos ||--o{ sesiones : se ejecuta en
+sesiones ||--o{ resultados_actividad : contiene
+actividades ||--o{ resultados_actividad : corresponde
+terapeutas ||--o{ decisiones_clinicas : registra
+ninos |o--o{ decisiones_clinicas : sobre
+ninos ||--o{ alertas_clinicas : genera
+terapeutas ||--o{ alertas_clinicas : recibe
+notificaciones |o--o{ alertas_clinicas : notifica
+usuarios ||--o{ notificaciones : recibe
+usuarios ||--o| configuracion_notificaciones : configura
+usuarios |o--o{ logs_auditoria : genera
+usuarios ||--o| participantes_estudio : participa
+consentimientos_informados ||--o{ participantes_estudio : respalda
+usuarios ||--o{ logs_uso : registra
+@enduml

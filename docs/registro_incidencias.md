@@ -47,3 +47,70 @@ Conclusión: **ningún RF implementado pasaba por el código afectado.** El cód
 **Resolución.** Se eliminaron `sqlite_local_database.dart` (con la tabla `patient_profiles_queue`) y `api_patient_repository.dart`. La tabla no aparecía en ninguna migración del backend ni en otro modelo. Ahora `SqliteDbRepository` es la única clase que abre `rimai_offline.db`; su `onUpgrade` usa DDL idempotente (`CREATE TABLE IF NOT EXISTS`) y en la versión 3 incorporó `logs_uso_local` (Instrumento 3).
 
 **Código muerto que queda (sin riesgo, pendiente de decisión).** `lib/application/ports/patient_port.dart` y `lib/application/usecases/submit_clinical_profile_usecase.dart` ya no tienen ningún adaptador ni consumidor.
+
+---
+
+## INC-002: `origen_registro` marca como offline todas las sesiones de la app familiar
+
+| Campo | Contenido |
+|---|---|
+| Fecha | 2026-11-13 |
+| Tipo | **Riesgo latente** (detectado en revisión de código; no observado en ejecución). **No suma a E.** |
+| RF | **Ninguno.** `origen_registro` no forma parte de los 27 RF ni de los instrumentos de recolección de datos. |
+| Componente | `sendaia_app/lib/core/providers/pmv2_providers.dart` (`SesionService.guardarResultadoActividad`) y `backend/app/adapters/inbound/api/dashboard_controller.py` (registro de sesiones en `POST /api/sesiones`) |
+| Severidad | Baja |
+| Estado | **Abierta** (se propone corregir en una versión futura) |
+
+**Descripción.** El backend asigna `origen_registro = 'familia_app_offline'` a toda sesión que llega con `client_event_id`, y `'familia_app'` a las que llegan sin él. Pero la app familiar genera un `client_event_id` para cada resultado y lo envía siempre, también cuando hay conexión y el resultado se guarda en línea. En consecuencia, todas las sesiones registradas desde la app quedan marcadas como `familia_app_offline` y el campo no permite distinguir los registros hechos sin conexión de los hechos en línea.
+
+**Impacto.** Ninguno sobre los RF ni sobre los indicadores de la tesis. El `client_event_id` cumple bien su función (evitar duplicados al sincronizar); solo la etiqueta de origen es incorrecta.
+
+**Corrección propuesta.** Que el cliente indique explícitamente si el envío viene de la cola local (por ejemplo, un campo `desde_cola_offline`) y que el backend asigne `origen_registro` a partir de ese dato y no de la presencia del `client_event_id`.
+
+---
+
+## INC-003: el estimador de dificultad no cumple RF27
+
+| Campo | Contenido |
+|---|---|
+| Fecha | 2026-11-14 |
+| Tipo | **Riesgo latente** (detectado en revisión de código; no observado en ejecución). **No suma a E** hasta que CP-27 se ejecute y falle. |
+| RF | **RF27** (estimar dificultad pedagógica). Afecta también a un criterio de CP-07 (RF07) y a uno de CP-13 (RF13). |
+| Componente | `backend/app/ai/motor.py` (`MotorAdaptativoRandomForest`), `backend/scripts/train_model.py` y `backend/app/adapters/inbound/api/dashboard_controller.py` (`POST /api/dashboard/paciente/{nino_id}/plan/generar`) |
+| Severidad | Alta |
+| Estado | **Abierta** |
+| Operación | CP-27, CP-07 y CP-13 (fallarán en E1) |
+
+**Descripción.** RF27 no se cumple: el estimador usa variables distintas a las del requerimiento y no expone la estimación al padre. CP-27, CP-07 y CP-13 fallarán en E1.
+
+- RF27 (`docs/01_requerimientos.md`) pide que la estimación considere **edad, atención, seguimiento de instrucciones y fatiga**. El Random Forest (`rf_dificultad.pkl`) usa **edad, nivel cognitivo, número de características del perfil sensorial y número de objetivos de intervención**. El número de características suma campos heredados del enfoque TEA (hipersensibilidad, hiposensibilidad, comportamientos repetitivos e intereses intensos).
+- El modelo solo se ejecuta cuando el **terapeuta** genera el plan; su resultado fija el nivel de dificultad inicial del plan. El padre no ve la estimación ni el aviso de que es una referencia pedagógica.
+- El otro estimador del backend (`AISupportUseCases.estimate_support_level`) tampoco usa atención, seguimiento de instrucciones ni fatiga.
+
+**Criterios que fallarán.**
+
+- CP-27: "La estimación considera edad, atención, seguimiento de instrucciones y fatiga" y "La pantalla indica que es una referencia pedagógica".
+- CP-07: "Cambiar el nivel de atención o el seguimiento de instrucciones cambia la estimación de RF27".
+- CP-13: "Las sugerencias consideran edad, atención, seguimiento de instrucciones, fatiga e intereses" (RF13 tampoco está implementado en la versión evaluada).
+
+**Tratamiento.** Se mantiene RF27 tal como está definido y se documenta como limitación conocida (sección 8.11 de `docs/documentacion_tecnica.md`). La corrección propuesta para una versión futura es reentrenar el estimador con las variables que pide RF27 (edad, atención, seguimiento de instrucciones y fatiga) y mostrar la estimación al padre con el aviso de referencia pedagógica.
+
+---
+
+## INC-004: RF13, RF14, RF15 y RF17 no están implementados
+
+| Campo | Contenido |
+|---|---|
+| Fecha | 2026-11-14 |
+| Tipo | **Riesgo latente** (no observado en ejecución; se observará cuando se ejecuten CP-13, CP-14, CP-15 y CP-17 en E1). **No suma a E** hasta entonces. |
+| RF | **RF13, RF14, RF15 y RF17** |
+| Componente | Módulo de sugerencias de actividades de la app familiar (`sendaia_app`) y su backend |
+| Severidad | Alta (afecta al PCC) |
+| Estado | **Abierta** |
+| Operación | CP-13, CP-14, CP-15 y CP-17 (fallarán en E1) |
+
+**Descripción.** Las sugerencias personalizadas, la organización en cinco áreas, las pausas activas y el filtro por área no están implementados en la versión evaluada. CP-13, CP-14, CP-15 y CP-17 fallarán en E1.
+
+RF16 (detalles de la actividad: propósito, dificultad, duración y materiales) sí está implementado y no forma parte de esta incidencia.
+
+**Tratamiento.** Se mantienen los RF y se documentan como limitación en 8.11. Corrección propuesta para una versión futura: implementar las cuatro funcionalidades.

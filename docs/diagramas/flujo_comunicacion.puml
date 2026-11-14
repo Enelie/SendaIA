@@ -1,0 +1,27 @@
+@startuml flujo_comunicacion
+' Figura 22. Flujo de comunicación entre componentes (sección 7.3.1).
+skinparam shadowing false
+title Flujo de comunicación entre componentes de SENDAIA
+
+actor "Usuario" as u
+participant "Pantalla Flutter\n(Riverpod)" as ui
+participant "Cliente HTTP\n(Dio)" as dio
+participant "Endpoint FastAPI\n(adaptador de entrada)" as api
+participant "Caso de uso\n(núcleo)" as uc
+participant "Repositorio PostgreSQL\n(adaptador de salida)" as repo
+database "PostgreSQL" as pg
+
+u -> ui : 1. Realiza una acción
+ui -> dio : solicita el dato
+dio -> api : 2. Solicitud HTTP + JSON\n(token JWT)
+api -> api : 3. Valida el token y los datos\n(Pydantic)
+api -> uc : 4. Ejecuta el caso de uso
+uc -> repo : 5. Consulta o guarda\n(a través del puerto)
+repo -> pg : SQL parametrizado (psycopg2)
+pg --> repo : filas
+repo --> uc : entidades
+uc --> api : resultado
+api --> dio : 6. Respuesta JSON
+dio --> ui
+ui --> u : 7. Actualiza la interfaz
+@enduml

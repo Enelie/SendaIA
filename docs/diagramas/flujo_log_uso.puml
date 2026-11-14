@@ -1,0 +1,45 @@
+@startuml flujo_log_uso
+' Figura 24. Flujo sin conexión del registro de uso (SQLite -> PostgreSQL), sección 7.6.2.
+' Fuente: usage_session_tracker.dart, sqlite_db_repository.dart, sync_offline_usecase.dart,
+' api_log_uso_repository.dart, log_uso_controller.py, sincronizar_log_uso_usecase.py,
+' 14_migration_log_uso.sql (sp_registrar_log_uso).
+skinparam shadowing false
+title Registro de uso: del celular (SQLite) al servidor (PostgreSQL)
+
+actor "Padre o tutor" as padre
+participant "UsageSessionTracker\n(Flutter)" as tracker
+database "SQLite\nlogs_uso_local" as sqlite
+participant "SyncOfflineUsecase\n(Flutter)" as sync
+participant "POST /api/v1/logs/uso/sync\n(FastAPI)" as api
+participant "SincronizarLogUsoUseCase" as uc
+database "PostgreSQL\nlogs_uso\n(sp_registrar_log_uso)" as pg
+
+padre -> tracker : inicia sesión / abre la app
+tracker -> sqlite : abre el acceso (client_event_id)
+loop cada 60 s en primer plano
+  tracker -> sqlite : guarda el latido
+end
+padre -> tracker : logout / segundo plano
+tracker -> sqlite : cierra el acceso\n(logout, segundo_plano o recuperada)
+
+note over sync
+  Se ejecuta al iniciar sesión, al abrir la app,
+  al recuperar la conexión y antes del logout.
+  Los accesos en segundo plano dentro del
+  período de gracia (5 min) no se envían.
+end note
+
+sync -> sqlite : lee accesos cerrados del usuario del token
+sync -> api : lote de hasta 200 accesos (JWT)
+api -> uc : usuario_id tomado del JWT
+uc -> uc : valida zona horaria, salida >= ingreso,\ningreso no futuro (+5 min), duración <= 12 h
+uc -> pg : registra cada acceso válido
+pg --> uc : insertado / duplicado / conflicto
+uc --> api : aceptados, rechazados, reintentar
+api --> sync : respuesta JSON
+sync -> sqlite : borra aceptados, marca rechazados,\nanota reintentos
+
+alt sin conexión o error del servidor
+  sync -> sqlite : los accesos quedan en la cola\npara el próximo intento
+end
+@enduml

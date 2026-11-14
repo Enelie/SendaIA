@@ -1,0 +1,52 @@
+@startuml arquitectura_hexagonal
+' Figura 21. Arquitectura hexagonal (puertos y adaptadores) del backend.
+' Fuente: backend/app/adapters, backend/app/application, backend/app/domain, backend/app/ai.
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+title Arquitectura hexagonal del backend de SENDAIA
+
+actor "Aplicación Flutter" as app
+
+package "Adaptadores de entrada\n(adapters/inbound/api)" {
+  [Controladores FastAPI\nauth, patient, plan, seguimiento,\nfamilia_seguimiento, reportes,\nai, admin, log_uso, dashboard] as ctrl
+}
+
+package "Núcleo" {
+  package "Casos de uso (application/usecases)" {
+    [auth, patient, therapist,\ngenerar_plan_sugerido, evaluation,\nevaluar_adherencia, generar_reporte_analitico,\nsincronizar_datos, ai_support,\nsincronizar_log_uso, exportar_log_uso] as uc
+  }
+  package "Dominio (domain/entities)" {
+    [user, patient, plan_terapeutico,\nactividad_ejecutada, reporte_progreso,\nalerta_adherencia, support_level,\nlog_trazabilidad, log_uso] as dom
+  }
+  package "Puertos (application/ports)" {
+    interface "user, patient, plan,\nseguimiento, reportes,\nauditoria, log_uso\n(repositorios)" as prepo
+    interface "file_storage" as pfile
+  }
+}
+
+package "Adaptadores de salida" {
+  [Repositorios PostgreSQL\n(adapters/outbound/database,\npsycopg2)] as repo
+  [CloudStorageAdapter\n(adapters/outbound/storage)] as storage
+  [Motor de IA\n(ai/motor.py, rf_dificultad.pkl)] as ia
+}
+
+database "PostgreSQL" as pg
+
+app --> ctrl : HTTP / JSON
+ctrl --> uc
+uc --> dom
+uc --> prepo
+uc --> pfile
+repo ..|> prepo
+storage ..|> pfile
+repo --> pg
+ctrl --> ia : generación del plan\n(dashboard_controller)
+
+note bottom of ctrl
+  dashboard_controller.py también ejecuta
+  consultas SQL directamente (get_connection)
+  y aloja las reglas del asistente para padres,
+  sin pasar por un puerto.
+end note
+@enduml
