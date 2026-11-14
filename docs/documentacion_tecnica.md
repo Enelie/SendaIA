@@ -798,7 +798,7 @@ La solución se compone de tres elementos principales:
 
 La comunicación entre el frontend y el backend se realiza mediante solicitudes HTTP con servicios REST, intercambiando información en formato JSON.
 
-> [Diagrama: generar la imagen desde docs/diagramas/arquitectura_general.puml]
+![Figura 20](diagramas/arquitectura_general.png)
 
 *Figura 20. Arquitectura general del software SENDAIA. Fuente: elaboración propia.*
 
@@ -859,7 +859,7 @@ El backend está desarrollado con FastAPI y organizado con la arquitectura hexag
 | Motor de IA | Adaptador de salida | Estima la dificultad con Random Forest (Scikit-learn) y aplica las reglas de selección. |
 | Asistente para padres | Adaptador de salida | Responde mediante reglas locales y el contexto del perfil del niño. |
 
-> [Diagrama: generar la imagen desde docs/diagramas/arquitectura_hexagonal.puml]
+![Figura 21](diagramas/arquitectura_hexagonal.png)
 
 *Figura 21. Arquitectura hexagonal del backend. Fuente: elaboración propia.*
 
@@ -873,7 +873,7 @@ El backend está desarrollado con FastAPI y organizado con la arquitectura hexag
 6. El backend devuelve una respuesta en formato JSON.
 7. Flutter procesa la respuesta y actualiza la interfaz.
 
-> [Diagrama: generar la imagen desde docs/diagramas/flujo_comunicacion.puml]
+![Figura 22](diagramas/flujo_comunicacion.png)
 
 *Figura 22. Flujo de comunicación entre componentes. Fuente: elaboración propia.*
 
@@ -996,7 +996,7 @@ El esquema se crea y se actualiza con los scripts SQL de `backend/sql/`, desde `
 
 El modelo muestra las 18 tablas con sus claves (todas UUID) y sus columnas principales. El código PlantUML del diagrama está en [`docs/diagramas/modelo_er.puml`](diagramas/modelo_er.puml).
 
-> [Diagrama: generar la imagen desde docs/diagramas/modelo_er.puml]
+![Figura 23](diagramas/modelo_er.png)
 
 *Figura 23. Modelo entidad-relación de SENDAIA. Fuente: elaboración propia.*
 
@@ -1043,7 +1043,7 @@ El periodo de intervención se calcula en hora de Lima: desde la fecha de inicio
 
 Una sesión se rechaza si no indica zona horaria, si su salida es anterior al ingreso, si su ingreso está en el futuro (con 5 minutos de tolerancia por diferencia de reloj) o si dura más de 12 horas. También se rechaza si su client_event_id ya pertenece a otro usuario.
 
-> [Diagrama: generar la imagen desde docs/diagramas/flujo_log_uso.puml]
+![Figura 24](diagramas/flujo_log_uso.png)
 
 *Figura 24. Flujo sin conexión del registro de uso (SQLite → PostgreSQL). Fuente: elaboración propia.*
 
