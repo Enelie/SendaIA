@@ -116,6 +116,7 @@
 | 8.10. Conclusiones de las pruebas y validación | — |
 | 8.11. Migración del enfoque TEA al enfoque TDAH | — |
 | 8.12. Registro de uso y aplicación del Instrumento 3 | — |
+| 8.13. Instrumentos de recolección de datos de la investigación | — |
 | **Referencias** | — |
 
 ## ÍNDICE DE FIGURAS
@@ -1154,7 +1155,7 @@ Para la validación del aplicativo se consideraron los siguientes tipos de prueb
 
 Los casos de prueba se organizaron de acuerdo con los requerimientos funcionales del aplicativo: hay un caso por cada requerimiento, 27 en total (CP-01 a CP-27), que forman parte del Instrumento 4 (lista de cotejo, casos de prueba y registro de incidencias). Para describir cada escenario se utilizó la estructura Given (Dado), When (Cuando) y Then (Entonces), que permite identificar las condiciones iniciales, la acción realizada y el resultado esperado.
 
-Cada caso incluye su código, el requerimiento que verifica, el escenario de prueba, los criterios de verificación y el resultado obtenido. Un caso se considera *Cumple* solo si se verifican todos sus criterios; si falla uno, es *No cumple* y se abre una incidencia en el registro de incidencias. Los casos se ejecutan en dos momentos: E1, antes de la intervención (validación técnica), y E2, durante la intervención.
+Cada caso incluye su código, el requerimiento que verifica, el escenario de prueba, los criterios de verificación y el resultado obtenido. Un caso se considera *Conforme* solo si se verifican todos sus criterios; si falla uno, es *No conforme* y se abre una incidencia en el registro de incidencias. El resultado se anota en la lista de cotejo del Instrumento 4, que tiene para cada requerimiento las columnas Conforme (Sí/No) y Observación. Los casos se ejecutan en dos momentos: E1, antes de la intervención (validación técnica), y E2, durante la intervención.
 
 Las historias de usuario y los criterios de aceptación se detallan en el capítulo 4 (secciones 4.3 y 4.4) y en docs/01_requerimientos.md. El cálculo de PCC y TE se detalla en la sección 8.9.
 
@@ -1705,9 +1706,11 @@ El instrumento consta de 6 ítems en escala Likert de 5 niveles (1 = totalmente 
 | Usabilidad | UA3 | La información y las recomendaciones mostradas en el aplicativo son claras y comprensibles. |
 | Funcionalidad | FA1 | El aplicativo brinda recomendaciones adaptadas a las necesidades de mi hijo. |
 | Funcionalidad | FA2 | Los recursos interactivos del aplicativo favorecen el aprendizaje de mi hijo. |
-| Interacción y personalización | IP1 | Adapta sus recomendaciones a las características de mi hijo. |
+| Interacción y personalización | IP1 | El aplicativo adapta sus recomendaciones según el progreso de mi hijo. |
 
-**Validez y confiabilidad:** la validez del instrumento se determina mediante juicio de expertos (Lawshe modificado por Tristán) y su confiabilidad mediante el alfa de Cronbach en una prueba piloto.
+*Nota.* El ítem IP1 mide el indicador «adaptación del sistema». Los indicadores «frecuencia de uso» y «tiempo de permanencia» de la misma dimensión se miden con el Instrumento 3 (ficha de registro de uso), y el funcionamiento adecuado, con el Instrumento 4 (ver sección 8.13).
+
+**Validez y confiabilidad:** la validez del instrumento se determina mediante juicio de expertos (Lawshe modificado por Tristán) y su confiabilidad mediante el alfa de Cronbach en una prueba piloto con 10 padres de familia con características similares a la población, no incluidos en la muestra de 30; se considera aceptable un valor igual o superior a 0,70 (ver sección 8.13).
 
 **Interpretación:** para cada dimensión se calcula el promedio de sus ítems. Un promedio de 4 o más indica que los participantes están de acuerdo con que el aplicativo cumple lo evaluado; un promedio entre 3 y menos de 4 indica una percepción intermedia; y un promedio menor a 3 indica que requiere mejoras.
 
@@ -1745,7 +1748,7 @@ Los resultados quedan pendientes hasta la ejecución de las pruebas: los casos f
 
 Con la lista de cotejo de los 27 casos (docs/03_casos_de_prueba.md) y el registro de incidencias (docs/registro_incidencias.md) se calculan dos indicadores del Instrumento 4:
 
-- Porcentaje de casos que cumplen: **PCC = (CC / CT) × 100**, donde CC es el número de casos con resultado *Cumple* y CT el total de casos (27).
+- Porcentaje de casos de prueba conformes: **PCC = (CC / CT) × 100**, donde CC es el número de casos con resultado *Conforme* y CT el número de casos ejecutados (27).
 - Tasa de error: **TE = (E / O) × 100**, donde E es el número de operaciones con error registradas durante las pruebas y O el total de operaciones registradas (cada paso ejecutado de un caso de prueba y cada operación manual registrada).
 
 Ambos se calculan por separado para E1 y E2. Sus valores quedan pendientes hasta la ejecución de los casos.
@@ -1906,7 +1909,44 @@ En detalle:
 5. **Alcance de la medición.** El registro de uso funciona en la aplicación Android; la versión web no registra accesos. Los participantes usan la aplicación Android.
 6. **Uso compartido del dispositivo.** El registro identifica la cuenta, no a la persona: si otro familiar usa el aplicativo con la sesión del padre, ese uso se atribuye al padre.
 
+### 8.13. Instrumentos de recolección de datos de la investigación
+
+La evaluación de SENDAIA en la investigación usa cuatro instrumentos. Los dos cuestionarios miden indicadores de percepción; la ficha de registro de uso y la lista de cotejo miden indicadores operativos y técnicos, que se calculan con una fórmula y no tienen ítems.
+
+| N.º | Instrumento | Contenido | Variable e indicadores | Momento | Escala |
+|---|---|---|---|---|---|
+| 1 | Cuestionario de apoyo parental | 9 ítems, tres por dimensión (AA1–AA3, CM1–CM3, OE1–OE3) | Apoyo parental (dependiente): acompañamiento académico, comunicación y motivación, organización del entorno de aprendizaje | Pretest y postest | Ordinal, Likert de frecuencia |
+| 2 | Cuestionario de valoración del aplicativo | 6 ítems: tres de usabilidad, dos de funcionalidad y uno de interacción y personalización (UA1–UA3, FA1–FA2, IP1) | Aplicativo móvil con IA (independiente): usabilidad, recomendaciones personalizadas, recursos interactivos y adaptación del sistema | Postest | Ordinal, Likert de acuerdo |
+| 3 | Ficha de registro de uso | Sin ítems: datos del registro de uso del aplicativo (tabla logs_uso, secciones 7.6.2 y 8.12) | Frecuencia de uso: FU = N / S; tiempo promedio de permanencia: TPP = ΣT / N | Durante la intervención (8 semanas) | De razón (accesos por semana; minutos por acceso) |
+| 4 | Lista de cotejo, casos de prueba y registro de incidencias | Sin ítems: 27 casos de prueba (CP-01 a CP-27), uno por requerimiento funcional, con las columnas Conforme (Sí/No) y Observación | Funcionamiento adecuado: PCC = (CC / CT) × 100; TE = (E / O) × 100 | Antes (E1) y durante (E2) la intervención | Nominal (Conforme / No conforme) y de razón (% de casos conformes, % de errores) |
+
+En total, los cuestionarios suman 15 ítems: 9 en el cuestionario de apoyo parental y 6 en el cuestionario de valoración del aplicativo. Los instrumentos 3 y 4 no tienen ítems: registran datos operativos y técnicos.
+
+Los cuestionarios emplean una escala ordinal de tipo Likert de cinco niveles:
+
+| Valor | Escala de frecuencia (cuestionario de apoyo parental) | Escala de acuerdo (cuestionario de valoración del aplicativo) |
+|---|---|---|
+| 1 | Nunca | Totalmente en desacuerdo |
+| 2 | Casi nunca | En desacuerdo |
+| 3 | A veces | Ni de acuerdo ni en desacuerdo |
+| 4 | Casi siempre | De acuerdo |
+| 5 | Siempre | Totalmente de acuerdo |
+
+**Intervención.** El estudio sigue un diseño preexperimental de pretest y postest con un solo grupo (GE: O₁ → X → O₂). Los 30 padres de familia responden el cuestionario de apoyo parental (pretest), usan el aplicativo durante un periodo de intervención de 8 semanas, en el que el sistema registra su uso automáticamente, y al final responden de nuevo el cuestionario de apoyo parental junto con el de valoración del aplicativo (postest).
+
+**Validez y confiabilidad.**
+
+| Instrumento | Validez | Confiabilidad |
+|---|---|---|
+| Cuestionarios 1 y 2 | Juicio de expertos (Lawshe modificado por Tristán) | Alfa de Cronbach en una prueba piloto con 10 padres de familia con características similares a la población, no incluidos en la muestra de 30; se considera aceptable un valor igual o superior a 0,70 y, si resulta inferior, se revisan los ítems antes de la aplicación definitiva |
+| Registro de uso del aplicativo (3) | Validación técnica: comprobar que el sistema registra correctamente la fecha y hora de ingreso y el tiempo de permanencia, con un uso conocido (abrir el aplicativo un número de veces y minutos conocidos y verificar que el registro coincide) | Consistencia de registros: repetir el mismo uso y comparar los registros exportados |
+| Lista de cotejo, casos de prueba e incidencias (4) | Juicio de expertos y contraste con los requerimientos y criterios de aceptación de esta documentación | Consistencia de registros: repetir la prueba y comparar |
+
+**Procesamiento de los datos.** Los datos se organizan en Microsoft Excel y se analizan con el software estadístico SPSS versión 29. Los cuestionarios y el registro de uso se resumen con estadística descriptiva. Para el apoyo parental, única variable medida antes y después de la intervención, se verifica la normalidad de las diferencias entre postest y pretest con la prueba de Shapiro-Wilk; si se cumple, se aplica la prueba t de Student para muestras relacionadas y, si no, la prueba de Wilcoxon. Se calcula además el tamaño del efecto con la d de Cohen (Cohen, 1988), con un nivel de significancia α = 0,05. La valoración del aplicativo y el registro de uso se analizan de forma descriptiva, porque no tienen medición previa a la intervención.
+
 ## Referencias
+
+Cohen, J. (1988). *Statistical power analysis for the behavioral sciences* (2.ª ed.). Lawrence Erlbaum Associates.
 
 Google. (s. f.-a). *[GA4] Acerca de las sesiones de Analytics*. Ayuda de Analytics. https://support.google.com/analytics/answer/9191807
 
